@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recycle Bin - Church Attendance System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #18212f;
+      --muted: #667085;
+      --primary: #1d4ed8;
+      --primary-dark: #163ea9;
+      --success: #15803d;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --border: #e5e7eb;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .title h1 {
+      font-size: 1.7rem;
+      margin-bottom: 4px;
+    }
+
+    .title p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #eef2ff;
+      color: #1e3a8a;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .summary-box {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-box h3 {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .summary-box .value {
+      font-size: 1.8rem;
+      font-weight: 800;
+    }
+
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .record-item:last-child {
+      border-bottom: none;
+    }
+
+    .item-main {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .item-main strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .item-main p {
+      margin-bottom: 6px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .pill.member {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .pill.record {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .pill.kid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .empty-box {
+      padding: 24px 0;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 900px) {
+      .summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      body {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="title">
+        <h1>Recycle Bin</h1>
+        <p>Restore deleted members, kids, and church records.</p>
+      </div>
+
+      <div class="btn-row">
+        <a href="main.html" class="btn btn-light">← Back Home</a>
+        <button class="btn btn-danger" onclick="emptyRecycleBin()">Empty Bin</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-box">
+        <h3>Total Items</h3>
+        <div class="value" id="totalDeleted">0</div>
+      </div>
+      <div class="summary-box">
+        <h3>Members</h3>
+        <div class="value" id="deletedMembers">0</div>
+      </div>
+      <div class="summary-box">
+        <h3>Kids</h3>
+        <div class="value" id="deletedKids">0</div>
+      </div>
+      <div class="summary-box">
+        <h3>Church Records</h3>
+        <div class="value" id="deletedRecords">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div class="section-title">Deleted Items</div>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+          <button class="filter-btn" onclick="setFilter('member', this)">Members</button>
+          <button class="filter-btn" onclick="setFilter('kid', this)">Kids</button>
+          <button class="filter-btn" onclick="setFilter('record', this)">Records</button>
+        </div>
+      </div>
+
+      <div id="recycleBinList"></div>
+    </div>
+  </div>
+
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Shared Supabase Configuration -->
+  <script src="supabase-config.js"></script>
+
+  <script>
+    let members = JSON.parse(localStorage.getItem('church_members') || '[]');
+    let attendance = JSON.parse(localStorage.getItem('church_attendance') || '[]');
+    let records = JSON.parse(localStorage.getItem('church_records') || '[]');
+    let kidsRecords = JSON.parse(localStorage.getItem('church_kids_records') || '[]');
+    let recycleBin = JSON.parse(localStorage.getItem('church_recycle_bin') || '[]');
+
+    let currentFilter = 'all';
+
+    function saveMembers() {
+      localStorage.setItem('church_members', JSON.stringify(members));
+    }
+
+    function saveAttendance() {
+      localStorage.setItem('church_attendance', JSON.stringify(attendance));
+    }
+
+    function saveRecords() {
+      localStorage.setItem('church_records', JSON.stringify(records));
+    }
+
+    function saveKidsRecords() {
+      localStorage.setItem('church_kids_records', JSON.stringify(kidsRecords));
+    }
+
+    function saveRecycleBin() {
+      localStorage.setItem('church_recycle_bin', JSON.stringify(recycleBin));
+    }
+
+    function updateSummary() {
+      const memberCount = recycleBin.filter(item => item.type === 'member').length;
+      const kidCount = recycleBin.filter(item => item.type === 'kid').length;
+      const recordCount = recycleBin.filter(item => item.type === 'record').length;
+
+      document.getElementById('totalDeleted').textContent = recycleBin.length;
+      document.getElementById('deletedMembers').textContent = memberCount;
+      document.getElementById('deletedKids').textContent = kidCount;
+      document.getElementById('deletedRecords').textContent = recordCount;
+    }
+
+    function setFilter(type, button) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      renderRecycleBin();
+    }
+
+    function getFilteredItems() {
+      if (currentFilter === 'all') return recycleBin;
+      return recycleBin.filter(item => item.type === currentFilter);
+    }
+
+    function getItemView(item) {
+      let title = '';
+      let subtitle = '';
+      let extra = '';
+      let badgeClass = '';
+      let badgeText = '';
+
+      if (item.type === 'member') {
+        title = item.data.fullName || 'Unnamed Member';
+        subtitle = `Number: ${item.data.memberNumber || 'N/A'}`;
+        extra = `Class: ${item.data.memberClass || 'N/A'} • Phone: ${item.data.phone || 'N/A'}`;
+        badgeClass = 'member';
+        badgeText = 'Member';
+      }
+
+      if (item.type === 'kid') {
+        title = item.data.name || 'Unnamed Kid';
+        subtitle = `Class: ${item.data.kidClass || 'N/A'}`;
+        extra = `Number: ${item.data.number || item.data.phone || 'N/A'}`;
+        badgeClass = 'kid';
+        badgeText = 'Kid';
+      }
+
+      if (item.type === 'record') {
+        title = item.data.title || 'Untitled Record';
+        subtitle = `Category: ${item.data.category || 'N/A'}`;
+        extra = `File: ${item.data.fileName || 'N/A'}`;
+        badgeClass = 'record';
+        badgeText = 'Church Record';
+      }
+
+      return { title, subtitle, extra, badgeClass, badgeText };
+    }
+
+    function renderRecycleBin() {
+      const wrap = document.getElementById('recycleBinList');
+      const items = getFilteredItems();
+
+      if (!items.length) {
+        wrap.innerHTML = `
+          <div class="empty-box">
+            <p>No deleted items found here.</p>
+          </div>
+        `;
+        updateSummary();
+        return;
+      }
+
+      wrap.innerHTML = items.map(item => {
+        const view = getItemView(item);
+
+        return `
+          <div class="record-item">
+            <div class="item-main">
+              <strong>${view.title}</strong>
+              <p class="muted">${view.subtitle}</p>
+              <p class="muted">${view.extra}</p>
+              <span class="pill ${view.badgeClass}">${view.badgeText}</span>
+              <p class="muted" style="margin-top:8px;">Deleted: ${new Date(item.deletedAt).toLocaleString()}</p>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-success" onclick="restoreItem(${item.binId})">Restore</button>
+              <button class="btn btn-danger" onclick="deleteForever(${item.binId})">Delete Permanently</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateSummary();
+    }
+
+    function restoreItem(binId) {
+      const item = recycleBin.find(entry => entry.binId === binId);
+      if (!item) return;
+
+      if (item.type === 'member') {
+        const exists = members.some(m => m.id === item.data.id || m.memberNumber === item.data.memberNumber);
+        if (!exists) {
+          members.push(item.data);
+          saveMembers();
+
+          const attendanceExists = attendance.some(a => a.memberId === item.data.id);
+          if (!attendanceExists) {
+            attendance.push({ memberId: item.data.id, present: false });
+            saveAttendance();
+          }
+        }
+      }
+
+      if (item.type === 'kid') {
+        const exists = kidsRecords.some(k => k.id === item.data.id);
+        if (!exists) {
+          kidsRecords.push(item.data);
+          saveKidsRecords();
+        }
+      }
+
+      if (item.type === 'record') {
+        const exists = records.some(r => r.id === item.data.id);
+        if (!exists) {
+          records.push(item.data);
+          saveRecords();
+        }
+      }
+
+      recycleBin = recycleBin.filter(entry => entry.binId !== binId);
+      saveRecycleBin();
+      renderRecycleBin();
+      alert('Item restored successfully.');
+    }
+
+    function deleteForever(binId) {
+      const item = recycleBin.find(entry => entry.binId === binId);
+      if (!item) return;
+
+      if (!confirm('Are you sure you want to permanently delete this item?')) return;
+
+      recycleBin = recycleBin.filter(entry => entry.binId !== binId);
+      saveRecycleBin();
+      renderRecycleBin();
+      alert('Item deleted permanently.');
+    }
+
+    function emptyRecycleBin() {
+      if (!recycleBin.length) {
+        alert('Recycle bin is already empty.');
+        return;
+      }
+
+      if (!confirm('Are you sure you want to empty the recycle bin permanently?')) return;
+
+      recycleBin = [];
+      saveRecycleBin();
+      renderRecycleBin();
+      alert('Recycle bin emptied successfully.');
+    }
+
+    renderRecycleBin();
+  </script>
+</body>
+</html>
