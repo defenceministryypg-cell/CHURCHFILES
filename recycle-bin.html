@@ -484,8 +484,8 @@
         case "member":
           return {
            title: data.full_name || data.fullName || "Unnamed Member",
-            subtitle: `Member Number: ${data.member_number || "N/A"}`,
-            extra: `Class: ${data.member_class || "N/A"} • Phone: ${data.phone || "N/A"}`,
+            subtitle: `Member Number: ${data.member_number || data.memberNumber || "N/A"}`,
+            extra: `Class: ${data.member_class || data.memberClass || "N/A"} • Phone: ${data.phone || data.phoneNumber || "N/A"}`,
             badgeClass: "member",
             badgeText: "Member"
           };
@@ -648,27 +648,50 @@
           throw new Error("Original record ID is missing.");
         }
 
-const restoredData = {
-  ...item.record_data,
-  id: item.original_record_id
-};
+        // Start with the saved record and restore its original ID.
+        const restoredData = {
+          ...data,
+          id: item.original_record_id
+        };
 
-// Convert frontend field names to database names.
-const fieldMapping = {
-  fullName: "full_name",
-  memberNumber: "member_number",
-  memberClass: "member_class",
-  profileImageUrl: "profile_image_url",
-  dateOfBirth: "date_of_birth",
-  phoneNumber: "phone"
-};
+        // Convert known frontend camelCase fields to database snake_case.
+        const fieldMapping = {
+          fullName: "full_name",
+          memberNumber: "member_number",
+          memberClass: "member_class",
+          profileImageUrl: "profile_image_url",
+          dateOfBirth: "date_of_birth",
+          phoneNumber: "phone"
+        };
 
-Object.entries(fieldMapping).forEach(([frontend, database]) => {
-  if (restoredData[frontend] !== undefined) {
-    restoredData[database] = restoredData[frontend];
-    delete restoredData[frontend];
-  }
-});
+        Object.entries(fieldMapping).forEach(([frontend, database]) => {
+          if (
+            Object.prototype.hasOwnProperty.call(restoredData, frontend) &&
+            restoredData[database] === undefined
+          ) {
+            restoredData[database] = restoredData[frontend];
+          }
+
+          // Remove frontend-only keys so Supabase does not treat them as columns.
+          delete restoredData[frontend];
+        });
+
+        // Optional PostgreSQL DATE columns must receive NULL, not an empty string.
+        const dateFields = [
+          "date_of_birth",
+          "dob",
+          "birth_date"
+        ];
+
+        dateFields.forEach(field => {
+          if (
+            Object.prototype.hasOwnProperty.call(restoredData, field) &&
+            typeof restoredData[field] === "string" &&
+            restoredData[field].trim() === ""
+          ) {
+            restoredData[field] = null;
+          }
+        });
 
         // Reactivate soft-deleted records.
         if (
