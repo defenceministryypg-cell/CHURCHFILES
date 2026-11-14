@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Church Attendance System</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
@@ -464,11 +464,18 @@
       }
 
       #printArea,
-      #printArea * {
+      #printArea *,
+      #absenteeHistoryPrintArea,
+      #absenteeHistoryPrintArea * {
         visibility: visible;
       }
+      body.printing-absentee-history #printArea,
+      body:not(.printing-absentee-history) #absenteeHistoryPrintArea {
+        display: none !important;
+      }
 
-      #printArea {
+      #printArea,
+      #absenteeHistoryPrintArea {
         display: block !important;
         position: absolute;
         left: 0;
@@ -674,7 +681,645 @@ td, th {
     display: none;
   }
 }
-  </style>
+  button:disabled { opacity: .65; cursor: not-allowed; }
+  
+
+/* ===== RESPONSIVE LAYOUT OVERRIDES ===== */
+html { width: 100%; overflow-x: hidden; }
+body { min-width: 320px; overflow-x: hidden; }
+.app { width: 100%; min-width: 0; grid-template-columns: 260px minmax(0, 1fr); }
+.content, .section, .card, .grid-2, .toolbar, .topbar { min-width: 0; }
+.content { width: 100%; }
+.grid-2 > *, .stats > * { min-width: 0; }
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+}
+.table-wrap table { min-width: 640px; }
+.table-wrap th, .table-wrap td { white-space: normal; overflow-wrap: anywhere; }
+.btn, button, input, select, textarea { max-width: 100%; }
+.btn-row { align-items: center; }
+.field input, .field select, .field textarea, .search-input { min-width: 0; }
+.topbar > div:last-child { min-width: 0; }
+.session-badge { white-space: normal; text-align: center; }
+
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 230px minmax(0, 1fr); }
+  .content { padding: 20px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 820px) {
+  .app { display: block; }
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(290px, 86vw);
+    height: 100dvh;
+    max-height: 100vh;
+    overflow-y: auto;
+    z-index: 1001;
+    transform: translateX(-105%);
+    left: 0;
+    transition: transform .25s ease;
+    box-shadow: 12px 0 35px rgba(0,0,0,.22);
+  }
+  .sidebar.show { left: 0; transform: translateX(0); }
+  .mobile-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .content { width: 100%; padding: 18px; }
+  .topbar { align-items: flex-start; }
+  .topbar > div:last-child { width: 100%; display: flex; flex-wrap: wrap; }
+  .topbar > div:last-child .btn,
+  .topbar > div:last-child .session-badge { flex: 1 1 auto; }
+}
+
+@media (max-width: 600px) {
+  .content { padding: 12px; }
+  .topbar { gap: 14px; margin-bottom: 16px; }
+  .title { width: 100%; }
+  .title h1 { font-size: clamp(1.15rem, 5vw, 1.4rem); line-height: 1.25; }
+  .title p { font-size: .84rem; }
+  .mobile-toggle { margin-bottom: 12px; }
+  .topbar > div:last-child { gap: 8px !important; }
+  .topbar > div:last-child .btn { flex: 1 1 calc(50% - 8px); padding: 10px 9px; font-size: .82rem; text-align: center; }
+  .topbar > div:last-child .session-badge { flex: 1 1 100%; padding: 8px 10px; font-size: .82rem; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 16px; }
+  .card { padding: 14px; border-radius: 13px; }
+  .stat-card h3 { font-size: .78rem; }
+  .stat-card .value { font-size: 1.55rem; }
+  .grid-2 { gap: 12px; }
+  .section-title { font-size: .98rem; }
+  .btn-row { gap: 8px; }
+  .btn-row .btn { flex: 1 1 100%; text-align: center; }
+  .toolbar { align-items: stretch; }
+  .toolbar > * { max-width: 100%; }
+  .search-input { max-width: 100%; }
+  .table-wrap table { min-width: 600px; }
+  .report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .report-header { flex-direction: row; align-items: center; }
+  .report-logo { width: 58px; height: 58px; }
+  .report-title-wrap h2 { font-size: 1.05rem; }
+  .report-title-wrap p { font-size: .8rem; }
+  .report-footer { flex-direction: column; }
+  .sign-box { width: 100%; }
+}
+
+@media (max-width: 380px) {
+  .stats { grid-template-columns: 1fr; }
+  .content { padding: 9px; }
+  .card { padding: 12px; }
+  .topbar > div:last-child .btn { flex-basis: 100%; }
+  .report-summary { grid-template-columns: 1fr; }
+}
+
+@media (hover: none) {
+  .card:hover, .btn:hover, .nav-btn:hover { transform: none; }
+}
+
+
+/* Sidebar full-height correction */
+.app {
+  align-items: stretch;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app > .sidebar {
+  align-self: stretch;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Keep the mobile drawer full-height while allowing its menu to scroll */
+@media (max-width: 820px) {
+  .app > .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+}
+
+
+
+/* Keep attendance status labels on one straight line on small screens */
+.pill, .pill.present, .pill.absent, .pill.open, .pill.closed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+/* Give the status column enough room for the complete label */
+#attendanceTable td:nth-child(4),
+#publicAttendanceTable td:nth-child(4) {
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  #attendanceTable td .pill,
+  #publicAttendanceTable td .pill {
+    font-size: 0.78rem;
+    padding: 7px 11px;
+  }
+}
+
+
+
+/* ==========================================================
+   RESPONSIVE ALL-SCREEN LAYOUT + SIDEWAYS PAGE SCROLL
+   This override is intended to be placed at the END of the
+   existing <style> block so it takes priority over old rules.
+   ========================================================== */
+
+/* Do not cut off content that is wider than the screen */
+html {
+  width: 100%;
+  min-width: 320px;
+  overflow-x: auto !important;
+  scroll-behavior: smooth;
+}
+
+body {
+  width: 100%;
+  min-width: 320px;
+  overflow-x: auto !important;
+}
+
+/* Let the whole application grow when a page genuinely needs
+   more horizontal room; the browser can then scroll sideways. */
+.app {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  grid-template-columns: 260px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.content,
+.section,
+section,
+.card,
+.grid-2,
+.stats,
+.toolbar,
+.topbar,
+form,
+.field {
+  min-width: 0;
+}
+
+/* Main content must not hide wide page content */
+.content {
+  width: 100%;
+  max-width: none;
+  overflow-x: visible !important;
+}
+
+/* Responsive cards and two-column layouts */
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.grid-2 > *,
+.stats > *,
+.card > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Every table has its own horizontal scroll area.
+   This preserves all columns instead of squeezing or cutting them. */
+.table-wrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.table-wrap table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+.table-wrap th,
+.table-wrap td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  vertical-align: top;
+}
+.table-wrap .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-shrink: 0;
+}
+
+/* Form controls should use the available width */
+.field,
+.field input,
+.field select,
+.field textarea,
+.search-input,
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+.field input,
+.field select,
+.field textarea,
+.search-input {
+  width: 100%;
+}
+input, select, textarea, button {
+  font: inherit;
+}
+img, video, iframe, canvas {
+  max-width: 100%;
+}
+
+/* Keep action areas usable without hiding buttons */
+.topbar,
+.toolbar,
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.btn {
+  max-width: 100%;
+  white-space: normal;
+}
+.member-card,
+.record-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Medium screens: tablet and small laptop */
+@media (max-width: 1100px) {
+  .app {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+  .content {
+    padding: 18px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile navigation drawer */
+@media (max-width: 820px) {
+  .app {
+    display: block;
+  }
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(290px, 86vw);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 2000;
+    transform: translateX(-105%);
+    transition: transform .25s ease;
+    box-shadow: 12px 0 35px rgba(0,0,0,.22);
+  }
+  .sidebar.show {
+    left: 0;
+    transform: translateX(0);
+  }
+  .mobile-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .content {
+    width: 100%;
+    padding: 15px;
+  }
+  .topbar {
+    align-items: flex-start;
+  }
+  .topbar > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+  .topbar > div:last-child > * {
+    flex: 1 1 auto;
+  }
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Phones */
+@media (max-width: 600px) {
+  .content {
+    padding: 11px;
+  }
+  .topbar {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .title {
+    width: 100%;
+  }
+  .title h1 {
+    font-size: clamp(1.15rem, 5vw, 1.4rem);
+    line-height: 1.25;
+  }
+  .title p {
+    font-size: .84rem;
+  }
+  .mobile-toggle {
+    margin-bottom: 10px;
+  }
+  .topbar > div:last-child > * {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+  .topbar > div:last-child .session-badge {
+    flex: 1 1 100%;
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .card {
+    padding: 13px;
+    border-radius: 13px;
+  }
+  .stat-card h3 {
+    font-size: .78rem;
+  }
+  .stat-card .value {
+    font-size: 1.45rem;
+    overflow-wrap: anywhere;
+  }
+  .section-title {
+    font-size: .98rem;
+  }
+  .toolbar {
+    align-items: stretch;
+  }
+  .toolbar > * {
+    max-width: 100%;
+  }
+  .btn-row > .btn {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .field input,
+  .field select,
+  .field textarea,
+  .search-input {
+    font-size: 16px;
+  }
+  .table-wrap table {
+    min-width: 650px;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    padding: 9px 8px;
+    font-size: .84rem;
+  }
+  .report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-header {
+    flex-direction: row;
+    align-items: center;
+  }
+  .report-logo {
+    width: 54px;
+    height: 54px;
+  }
+  .report-title-wrap h2 {
+    font-size: 1rem;
+  }
+  .report-title-wrap p {
+    font-size: .78rem;
+  }
+  .report-footer {
+    flex-direction: column;
+  }
+  .sign-box {
+    width: 100%;
+  }
+}
+
+/* Extra-small phones */
+@media (max-width: 380px) {
+  .content {
+    padding: 8px;
+  }
+  .card {
+    padding: 10px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .stat-card .value {
+    font-size: 1.3rem;
+  }
+  .topbar > div:last-child > * {
+    flex-basis: 100%;
+  }
+  .report-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Do not animate cards/buttons on touch screens */
+@media (hover: none) {
+  .card:hover,
+  .btn:hover,
+  .nav-btn:hover {
+    transform: none;
+  }
+}
+
+/* Keep printed reports clean */
+@media print {
+  html, body {
+    overflow: visible !important;
+    min-width: 0;
+  }
+  .sidebar,
+  .mobile-toggle {
+    display: none !important;
+  }
+  .app {
+    display: block !important;
+    width: 100%;
+  }
+  .content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
+    
+/* MOBILE BUTTON ARRANGEMENT */
+@media (max-width: 600px) {
+
+  .topbar > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100%;
+  }
+
+  .topbar > div:last-child > .btn,
+  .topbar > div:last-child > button,
+  .topbar > div:last-child > a {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 52px;
+    padding: 11px 8px !important;
+    margin: 0 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(145deg, #ffffff, #edf3ff) !important;
+    color: #1e3a8a !important;
+    border: 1px solid #dce6fa;
+    box-shadow: 0 4px 12px rgba(30,64,175,.08);
+    font-size: .9rem !important;
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Logout button */
+  .topbar > div:last-child > #adminLogoutBtn {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+    color: white !important;
+  }
+
+  /* Attendance and registration status */
+  .topbar > div:last-child > .session-badge {
+    grid-column: 1 / -1;
+    width: 100% !important;
+    min-height: 46px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 30px;
+  }
+
+  .topbar > div:last-child > .hidden {
+    display: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar > div:last-child {
+    gap: 8px !important;
+  }
+
+  .topbar > div:last-child > .btn,
+  .topbar > div:last-child > button,
+  .topbar > div:last-child > a {
+    min-height: 48px;
+    font-size: .82rem !important;
+  }
+}
+
+
+
+/* Optional member profile photos */
+.profile-photo-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.profile-photo-preview,
+.member-avatar {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #dbeafe;
+  background: #eaf0fb;
+}
+.profile-photo-preview:empty { display: none; }
+.profile-photo-preview:not([src]),
+.profile-photo-preview[src=""] { display: none; }
+.profile-photo-input { min-width: 0; flex: 1; }
+.profile-photo-input input { width: 100%; }
+.member-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.member-card-heading h4 { margin: 0; overflow-wrap: anywhere; }
+.member-avatar-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+</style>
 </head>
 <body>
   <div class="app">
@@ -684,7 +1329,15 @@ td, th {
       <button class="nav-btn" data-section="member-registration" data-role="admin">Member Registration</button>
       <button class="nav-btn" data-section="attendance" data-role="admin">Attendance Control</button>
       <button class="nav-btn" data-section="absentees" data-role="admin">Absentees</button>
+      <button class="nav-btn" data-section="absentee-history" data-role="admin">Absentee History</button>
+      <button class="nav-btn"
+        data-section="member-status"
+        data-role="admin">
+    Member Status & Transfers
+</button>
       <button class="nav-btn" data-section="records" data-role="admin">Church Records</button>
+      <button class="nav-btn" data-section="finance" data-role="admin" data-staff-roles="main,treasurer,pastor">Church Finance</button>
+      <button class="nav-btn" data-section="admin-management" data-role="admin" data-main-only="true">Administrator Management</button>
       <button class="nav-btn active" data-section="member-home" data-role="member">Member Home</button>
       <button class="nav-btn" data-section="member-self-register" data-role="member">Member Registration</button>
       <button class="nav-btn" data-section="member-search" data-role="member">Search Members</button>
@@ -757,11 +1410,79 @@ td, th {
                 <button type="submit" class="btn btn-primary">Login as Admin</button>
               </div>
             </form>
-            <p class="muted" style="margin-top:12px;"></p>
+            <p style="margin-top:12px;">
+              <button type="button" class="btn btn-light" id="forgotAdminPasswordBtn">Forgot Password?</button>
+            </p>
+            <p class="muted" id="forgotPasswordMessage" style="margin-top:8px;" aria-live="polite"></p>
+          </div>
+          <div class="card">
+            <div class="section-title">Apply for Administrator Access</div>
+            <p class="muted" style="margin-bottom:12px;">Create your own administrator account. Your application will remain pending until the Main Administrator approves it.</p>
+            <form id="adminSignupForm">
+              <div class="field">
+                <label>Full Name</label>
+                <input type="text" id="adminSignupName" placeholder="Enter your full name" required />
+              </div>
+              <div class="field">
+                <label>Email Address</label>
+                <input type="email" id="adminSignupEmail" placeholder="Enter your email address" required />
+              </div>
+              <div class="field">
+                <label>Create Password</label>
+                <input type="password" id="adminSignupPassword" placeholder="At least 8 characters" minlength="8" required />
+              </div>
+              <div class="field">
+                <label>Confirm Password</label>
+                <input type="password" id="adminSignupConfirmPassword" placeholder="Confirm your password" minlength="8" required />
+              </div>
+              <div class="btn-row">
+                <button type="submit" class="btn btn-primary">Submit Admin Application</button>
+              </div>
+              <p class="muted" id="adminSignupMessage" aria-live="polite"></p>
+            </form>
           </div>
           <div class="card">
             <div class="section-title">Access Note</div>
-            <p class="muted">Members do not need login. Only admin sections are protected with login in this version.</p>
+            <p class="muted">Members do not need an administrator login. New administrator applications must be approved by the Main Administrator before dashboard access is granted.</p>
+          </div>
+        </div>
+
+        <div class="card hidden" id="adminPasswordRecoveryCard" style="max-width:560px;margin-top:18px;">
+          <div class="section-title">Set a New Administrator Password</div>
+          <p class="muted" style="margin-bottom:12px;">Enter and confirm your new password. This works for existing administrators and administrator applicants who have a registered account.</p>
+          <form id="adminPasswordRecoveryForm">
+            <div class="field">
+              <label for="recoveryNewPassword">New Password</label>
+              <input type="password" id="recoveryNewPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required />
+            </div>
+            <div class="field">
+              <label for="recoveryConfirmPassword">Confirm New Password</label>
+              <input type="password" id="recoveryConfirmPassword" minlength="8" autocomplete="new-password" placeholder="Re-enter your new password" required />
+            </div>
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary" id="saveRecoveredPasswordBtn">Update Password</button>
+              <button type="button" class="btn btn-light" id="cancelPasswordRecoveryBtn">Back to Login</button>
+            </div>
+            <p class="muted" id="passwordRecoveryMessage" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="section" id="admin-management">
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <div class="section-title">Administrator Management</div>
+              <p class="muted">Only the Main Administrator can approve, reject or revoke administrator access.</p>
+            </div>
+            <button class="btn btn-light" id="refreshAdminListBtn" type="button">Refresh List</button>
+          </div>
+          <div id="adminManagementMessage" class="muted" style="margin:10px 0;" aria-live="polite"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>User ID</th><th>Level</th><th>Staff Role</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="adminApplicationsTable"><tr><td colspan="6">Administrator list will appear here.</td></tr></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -824,6 +1545,19 @@ td, th {
                 <label>Note</label>
                 <textarea id="note" placeholder="Optional note"></textarea>
               </div>
+              <div class="field profile-photo-field">
+                <label for="profilePhoto">Profile Photo <span class="muted">(Optional)</span></label>
+                <div class="profile-photo-picker">
+                  <img id="profilePhotoPreview" class="profile-photo-preview" alt="Profile photo preview" />
+                  <div class="profile-photo-input">
+                    <input type="file" id="profilePhoto" accept="image/png,image/jpeg,image/webp" />
+                    <div class="btn-row" style="margin-top:8px;">
+                      <button type="button" class="btn btn-light" id="captureProfilePhotoBtn">📷 Take Photo</button>
+                    </div>
+                    <small class="muted">Upload an image or take a live photo. JPG, PNG or WebP. Maximum 3 MB.</small>
+                  </div>
+                </div>
+              </div>
               <div class="btn-row">
                 <button type="submit" class="btn btn-primary" id="saveMemberBtn">Save Member</button>
                 <button type="button" class="btn btn-light" id="cancelMemberEditBtn" style="display:none;">Cancel Edit</button>
@@ -862,13 +1596,20 @@ td, th {
       <section class="section" id="member-home">
         <div class="grid-2">
           <div class="card">
-            <div class="section-title">Member Welcome</div>
-            <p class="muted" style="margin-bottom:14px;">New members must complete registration first. After registration, they can use their church serial number or registered phone number to mark attendance when the administrator opens the session, search members, and check birthdays.</p>
+            <div class="section-title">Member Services</div>
+            <p class="muted" style="margin-bottom:16px;">
+              Use the options below to register, find your church information, or record your attendance.
+              You do not need an administrator account to use these member services.
+            </p>
             <div class="btn-row">
-              <button class="btn btn-warning" onclick="goToSection('member-self-register')">Register as Member</button>
-              <button class="btn btn-primary" onclick="goToSection('member-search')">Search Members</button>
-              <button class="btn btn-success" onclick="goToSection('member-attendance')">Mark Attendance</button>
-              <button class="btn btn-light" onclick="goToSection('member-birthdays')">View Birthdays</button>
+              <button class="btn btn-warning" type="button" onclick="goToSection('member-self-register')">Register as Member</button>
+              <button class="btn btn-primary" type="button" onclick="goToSection('member-search')">Search &amp; Find Member</button>
+              <button class="btn btn-success" type="button" onclick="goToSection('member-attendance')">Find My Record &amp; Mark Attendance</button>
+              <button class="btn btn-light" type="button" onclick="goToSection('member-birthdays')">View Birthdays</button>
+            </div>
+            <div style="margin-top:16px;">
+              <p class="muted"><strong>Search:</strong> Enter your name or church serial number to find your member information.</p>
+              <p class="muted"><strong>Attendance:</strong> Enter your registered church serial number or phone number, find your record, then confirm attendance. Attendance can only be recorded when the administrator opens the session.</p>
             </div>
           </div>
           <div class="card">
@@ -917,6 +1658,19 @@ td, th {
                 <label>Note</label>
                 <textarea id="selfNote" placeholder="Optional note"></textarea>
               </div>
+              <div class="field profile-photo-field">
+                <label for="selfProfilePhoto">Profile Photo <span class="muted">(Optional)</span></label>
+                <div class="profile-photo-picker">
+                  <img id="selfProfilePhotoPreview" class="profile-photo-preview" alt="Profile photo preview" />
+                  <div class="profile-photo-input">
+                    <input type="file" id="selfProfilePhoto" accept="image/png,image/jpeg,image/webp" />
+                    <div class="btn-row" style="margin-top:8px;">
+                      <button type="button" class="btn btn-light" id="captureSelfProfilePhotoBtn">📷 Take Photo</button>
+                    </div>
+                    <small class="muted">Upload an image or take a live photo. JPG, PNG or WebP. Maximum 3 MB.</small>
+                  </div>
+                </div>
+              </div>
               <div class="btn-row">
                 <button type="submit" class="btn btn-primary">Submit Registration</button>
               </div>
@@ -932,8 +1686,11 @@ td, th {
       <section class="section" id="member-search">
         <div class="card">
           <div class="toolbar">
-            <div class="section-title">Search Members by Name or Phone Number</div>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search by name or phone number..." />
+            <div>
+              <div class="section-title">Find Member Information</div>
+              <p class="muted">Search using a member's name, church serial number or registered phone number.</p>
+            </div>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by name, church serial number or phone number..." />
           </div>
           <div class="table-wrap" id="searchTableWrap">
             <table>
@@ -946,7 +1703,7 @@ td, th {
 <th>Class</th>
 <th>DOB</th>
 <th>Type</th>
-<th>Note</th>
+<th class="admin-search-private">Note</th>
                 </tr>
               </thead>
               <tbody id="searchResults"></tbody>
@@ -958,7 +1715,10 @@ td, th {
       <section class="section" id="member-attendance">
         <div class="card">
           <div class="toolbar">
-            <div class="section-title">Member Self Attendance</div>
+            <div>
+              <div class="section-title">Find Your Record &amp; Mark Attendance</div>
+              <p class="muted">Use your registered serial number or phone number to find your record.</p>
+            </div>
             <span id="memberAttendancePill" class="pill closed">Closed</span>
           </div>
           <div class="grid-2">
@@ -990,6 +1750,21 @@ td, th {
                   <button class="btn btn-light" id="clearMemberPreviewBtn">Clear</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:18px;">
+            <div class="toolbar">
+              <div>
+                <div class="section-title">Church-Wide Attendance Register</div>
+                <p class="muted">All members can view today's attendance status.</p>
+              </div>
+              <button class="btn btn-light" type="button" id="refreshPublicAttendanceBtn">Refresh Register</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Name</th><th>Church Serial</th><th>Class</th><th>Status</th><th>Marked At</th></tr></thead>
+                <tbody id="publicAttendanceTable"><tr><td colspan="5">Loading attendance register...</td></tr></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1036,36 +1811,256 @@ td, th {
         <div id="printArea" class="print-report"></div>
       </section>
 
-      <section class="section" id="records">
+      <section class="section" id="absentee-history">
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <div class="section-title">Absentee History</div>
+              <p class="muted">Review absentees from previously closed attendance sessions. Select a date to view, message, download or print its record.</p>
+            </div>
+            <button class="btn btn-light" type="button" id="refreshAbsenteeHistoryBtn">Refresh History</button>
+          </div>
+          <div id="absenteeHistoryMessage" class="muted" aria-live="polite" style="margin:10px 0;">Select Refresh History to load saved records.</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Attendance Date</th><th>Closed At</th><th>Absent</th><th>Present</th><th>Total</th><th>Action</th></tr></thead>
+              <tbody id="absenteeHistoryTable"><tr><td colspan="6">No history loaded.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;" id="absenteeHistoryDetailCard">
+          <div class="toolbar">
+            <div>
+              <div class="section-title" id="absenteeHistoryDetailTitle">Selected Session</div>
+              <p class="muted" id="absenteeHistoryDetailSubtitle">Choose a closed attendance date above.</p>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-success" type="button" id="downloadAbsenteeHistoryBtn" disabled>Download CSV</button>
+              <button class="btn btn-primary" type="button" id="printAbsenteeHistoryBtn" disabled>Print List</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Name</th><th>Church Serial</th><th>Class</th><th>Phone</th><th>Message</th></tr></thead>
+              <tbody id="absenteeHistoryDetailTable"><tr><td colspan="6">No session selected.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="absenteeHistoryPrintArea" class="print-report"></div>
+      </section>
+
+
+      <!-- MEMBER STATUS & CHURCH TRANSFERS -->
+      <section class="section" id="member-status">
+        <div class="stats" style="margin-bottom:20px;">
+          <div class="card stat-card">
+            <h3>Deceased Members</h3>
+            <div class="value" id="deceasedCount">0</div>
+          </div>
+          <div class="card stat-card">
+            <h3>Transferred Members</h3>
+            <div class="value" id="transferredCount">0</div>
+          </div>
+        </div>
+
         <div class="grid-2">
           <div class="card">
-            <div class="section-title">Upload Church / Secretary Records</div>
-            <form id="recordForm">
+            <div class="section-title">Record Member Status</div>
+            <form id="memberStatusForm">
               <div class="field">
-                <label>Record Title</label>
-                <input type="text" id="recordTitle" required />
+                <label for="statusFullName">Full Name</label>
+                <input type="text" id="statusFullName" required>
               </div>
               <div class="field">
-                <label>Category</label>
-                <select id="recordCategory" required>
-                  <option value="">Select category</option>
-                  <option>Church Record</option>
-                  <option>Secretary Record</option>
-                  <option>Minutes</option>
-                  <option>Report</option>
+                <label for="statusMemberNumber">Church Serial Number</label>
+                <input type="text" id="statusMemberNumber" placeholder="Enter church serial number" required>
+              </div>
+              <div class="field">
+                <label for="statusType">Record Type</label>
+                <select id="statusType" required>
+                  <option value="">Select record type</option>
+                  <option value="deceased">Deceased Member</option>
+                  <option value="transferred">Transferred to Another Church</option>
                 </select>
               </div>
               <div class="field">
-                <label>Select File</label>
-                <input type="file" id="recordFile" required />
+                <label for="statusEventDate" id="statusDateLabel">Date of Death</label>
+                <input type="date" id="statusEventDate" required>
               </div>
-              <button type="submit" class="btn btn-primary">Upload Record</button>
+              <div class="field hidden" id="destinationChurchField">
+                <label for="destinationChurch">Receiving Church</label>
+                <input type="text" id="destinationChurch" placeholder="Enter receiving church">
+              </div>
+              <div class="field">
+                <label for="statusRemarks">Additional Remarks</label>
+                <textarea id="statusRemarks" placeholder="Optional remarks"></textarea>
+              </div>
+              <div class="btn-row">
+                <button type="submit" class="btn btn-primary" id="saveStatusBtn">Save Record</button>
+                <button type="button" class="btn btn-light" id="cancelStatusEditBtn" style="display:none;">Cancel Edit</button>
+              </div>
+              <p class="muted" id="memberStatusMessage" aria-live="polite"></p>
             </form>
           </div>
 
           <div class="card">
-            <div class="section-title">Stored Records</div>
-            <div id="recordsList" class="muted">No records uploaded yet.</div>
+            <div class="section-title">About These Records</div>
+            <div class="member-card">
+              <h4 style="color:#dc2626;">Deceased Members</h4>
+              <p class="muted">Keep a respectful record of members who have passed away, including the date of death.</p>
+            </div>
+            <div class="member-card">
+              <h4 style="color:#2563eb;">Transferred Members</h4>
+              <p class="muted">Record members who have transferred to another church, including the receiving church and transfer date.</p>
+            </div>
+            <p class="muted">Recording a deceased or transferred member automatically removes that person from the active membership total. The historical status record remains available in this register.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="toolbar">
+            <div>
+              <div class="section-title">Member Status Register</div>
+              <p class="muted">Search, review and manage deceased and transferred member records.</p>
+            </div>
+            <button class="btn btn-light" type="button" id="refreshStatusRecordsBtn">Refresh Records</button>
+          </div>
+          <div class="toolbar">
+            <input type="search" id="statusSearch" class="search-input" placeholder="Search name, serial number or receiving church...">
+            <select id="statusFilter" class="search-input" aria-label="Filter member status records">
+              <option value="all">All Records</option>
+              <option value="deceased">Deceased Members</option>
+              <option value="transferred">Transferred Members</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th><th>Member Name</th><th>Church Serial</th>
+                  <th>Status</th><th>Date</th><th>Receiving Church</th>
+                  <th>Remarks</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="memberStatusTable">
+                <tr><td colspan="8">Open this page to load records.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="records">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="section-title">Church Records & Secretariat</div>
+          <p class="muted">Upload and retain official church documents in secure Supabase Storage. Access depends on the staff role assigned by the Main Administrator.</p>
+          <p id="recordsRoleNotice" class="muted" style="margin-top:8px;" aria-live="polite"></p>
+        </div>
+        <div class="grid-2">
+          <div class="card" id="recordUploadCard">
+            <div class="section-title">Upload Church Record</div>
+            <form id="recordForm">
+              <div class="field"><label for="recordTitle">Record Title</label><input type="text" id="recordTitle" maxlength="160" required /></div>
+              <div class="field"><label for="recordCategory">Category</label>
+                <select id="recordCategory" required>
+                  <option value="">Select category</option>
+                  <option>Church Record</option><option>Secretary Record</option><option>Minutes</option>
+                  <option>Resolution</option><option>Report</option><option>Correspondence</option><option>Other</option>
+                </select>
+              </div>
+              <div id="minutesWorkspace" class="hidden" style="padding:16px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:14px;display:grid;gap:12px;">
+                <h3>Meeting Minutes Recorder</h3>
+                <p class="muted">Complete the meeting information and click Generate Official Minutes. You may edit the details and generate again.</p>
+                <div class="grid-2">
+                  <div class="field"><label for="minutesMeetingType">Meeting Type</label><input id="minutesMeetingType" placeholder="e.g. Church Board Meeting"></div>
+                  <div class="field"><label for="minutesVenue">Venue</label><input id="minutesVenue" placeholder="e.g. Church Conference Room"></div>
+                  <div class="field"><label for="minutesStartTime">Starting Time</label><input type="time" id="minutesStartTime"></div>
+                  <div class="field"><label for="minutesEndTime">Closing Time</label><input type="time" id="minutesEndTime"></div>
+                  <div class="field"><label for="minutesChairperson">Chairperson</label><input id="minutesChairperson" placeholder="Full name"></div>
+                  <div class="field"><label for="minutesSecretary">Secretary</label><input id="minutesSecretary" placeholder="Full name"></div>
+                </div>
+                <div class="field"><label for="minutesPresent">Members Present (one name per line)</label><textarea id="minutesPresent"></textarea></div>
+                <div class="field"><label for="minutesAbsent">Apologies / Absentees (one name per line)</label><textarea id="minutesAbsent"></textarea></div>
+                <div class="field"><label for="minutesOpening">Opening Prayer / Devotion</label><textarea id="minutesOpening"></textarea></div>
+                <div class="field"><label for="minutesPrevious">Previous Minutes and Matters Arising</label><textarea id="minutesPrevious"></textarea></div>
+                <div class="field"><label for="minutesAgenda">Agenda Items (one item per line)</label><textarea id="minutesAgenda"></textarea></div>
+                <div class="field"><label for="minutesDiscussion">Discussions / Proceedings</label><textarea id="minutesDiscussion" style="min-height:150px;"></textarea></div>
+                <div class="field"><label for="minutesResolutions">Resolutions / Decisions (one per line)</label><textarea id="minutesResolutions"></textarea></div>
+                <div class="field"><label for="minutesActions">Action Points / Responsible Persons / Deadlines</label><textarea id="minutesActions"></textarea></div>
+                <div class="field"><label for="minutesNextMeeting">Next Meeting</label><input id="minutesNextMeeting" placeholder="Date, time and venue (if agreed)"></div>
+                <div class="field"><label for="minutesClosing">Closing Remarks / Prayer</label><textarea id="minutesClosing"></textarea></div>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-primary" id="generateMinutesBtn">Generate Official Minutes</button>
+                  <button type="button" class="btn btn-light" id="saveMinutesDraftBtn">Save Draft on This Device</button>
+                  <button type="button" class="btn btn-light" id="restoreMinutesDraftBtn">Restore Draft</button>
+                </div>
+                <p class="muted" id="minutesMessage" aria-live="polite"></p>
+                <div id="minutesPreviewWrap" class="hidden">
+                  <h3>Official Minutes Preview</h3>
+                  <div id="minutesPreview" style="background:white;border:1px solid #ddd;padding:20px;max-height:500px;overflow:auto;"></div>
+                  <div class="btn-row" style="margin-top:12px;">
+                    <button type="button" class="btn btn-success" id="downloadMinutesBtn">Download Minutes (HTML)</button>
+                    <button type="button" class="btn btn-light" id="printMinutesBtn">Print / Save as PDF</button>
+                  </div>
+                  <p class="muted">To store these minutes in church records, click Upload Record below.</p>
+                </div>
+              </div>
+              <div id="categoryWorkspace" class="hidden" style="padding:12px;background:#f8fafc;border-radius:12px;">
+                <div class="field"><label for="categoryRecordBody">Record Content / Notes</label><textarea id="categoryRecordBody" placeholder="Write the details of this record here, then generate a document if no file is attached."></textarea></div>
+                <button type="button" class="btn btn-light" id="generateCategoryBtn">Generate Document from Notes</button>
+              </div>
+              <div class="field"><label for="recordDate">Record Date</label><input type="date" id="recordDate" /></div>
+              <div class="field"><label for="recordDescription">Description / Notes</label><textarea id="recordDescription" maxlength="1000" placeholder="Brief description (optional)"></textarea></div>
+              <div class="field"><label for="recordFile">Select Document</label><input type="file" id="recordFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.html,.txt" /></div>
+              <button type="submit" class="btn btn-primary" id="uploadRecordBtn">Upload Record</button>
+              <p id="recordUploadMessage" class="muted" aria-live="polite"></p>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title">Stored Church Records</div><button type="button" class="btn btn-light" id="refreshRecordsBtn">Refresh</button></div>
+            <input class="search-input" id="recordsSearch" placeholder="Search title or category..." />
+            <div id="recordsList" class="muted" style="margin-top:12px;">Records will appear here.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="finance">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="section-title">Church Finance</div>
+          <p class="muted">Record tithe, offerings, donations and other church income. Financial entries are visible only to authorised staff roles.</p>
+        </div>
+        <div class="stats" style="margin-bottom:16px;">
+          <div class="card stat-card"><h3>Total Recorded Income</h3><div class="value" id="financeTotal">GH₵0.00</div></div>
+          <div class="card stat-card"><h3>This Month</h3><div class="value" id="financeMonthTotal">GH₵0.00</div></div>
+          <div class="card stat-card"><h3>Transactions</h3><div class="value" id="financeCount">0</div></div>
+          <div class="card stat-card"><h3>Current Staff Role</h3><div class="value" id="financeRole" style="font-size:1.1rem;">—</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card" id="financeEntryCard">
+            <div class="section-title">Record Income</div>
+            <form id="financeForm">
+              <div class="field">
+                <label for="financeMemberSearch">Search Paying Member</label>
+                <input type="search" id="financeMemberSearch" autocomplete="off"
+                  placeholder="Search by name, church serial number or phone..." />
+                <small class="muted">Select a registered member before saving the payment.</small>
+                <div id="financeMemberResults" class="member-card hidden" style="margin-top:8px;" role="listbox"></div>
+                <div id="financeSelectedMember" class="member-card hidden" style="margin-top:8px;background:#eff6ff;" aria-live="polite"></div>
+                <input type="hidden" id="financeMemberId" />
+              </div>
+              <div class="field"><label for="financeType">Income Type</label><select id="financeType" required><option value="">Select type</option><option>Tithe</option><option>Offering</option><option>Donation</option><option>Thanksgiving</option><option>Other</option></select></div>
+              <div class="field"><label for="financeAmount">Amount (GH₵)</label><input type="number" id="financeAmount" min="0.01" step="0.01" required /></div>
+              <div class="field"><label for="financeDate">Date Received</label><input type="date" id="financeDate" required /></div>
+              <div class="field"><label for="financeReference">Reference / Receipt No. (optional)</label><input type="text" id="financeReference" maxlength="100" /></div>
+              <div class="field"><label for="financeNotes">Notes (optional)</label><textarea id="financeNotes" maxlength="1000"></textarea></div>
+              <button type="submit" class="btn btn-primary" id="saveFinanceBtn">Save Transaction</button>
+              <p id="financeMessage" class="muted" aria-live="polite"></p>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title">Income Transactions</div><button type="button" class="btn btn-light" id="refreshFinanceBtn">Refresh</button></div>
+            <div class="field"><label for="financeFilter">Filter by type</label><select id="financeFilter"><option value="">All income</option><option>Tithe</option><option>Offering</option><option>Donation</option><option>Thanksgiving</option><option>Other</option></select></div>
+            <div id="financeList" class="muted" style="margin-top:12px;">Transactions will appear here.</div>
           </div>
         </div>
       </section>
@@ -1077,6 +2072,23 @@ td, th {
 
   <!-- Shared Supabase Configuration -->
   <script src="supabase-config.js"></script>
+
+  <div id="profileCameraModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="profileCameraTitle"
+       style="position:fixed;inset:0;z-index:5000;background:rgba(15,23,42,.82);padding:18px;display:flex;align-items:center;justify-content:center;">
+    <div style="width:min(520px,100%);background:#fff;border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <h3 id="profileCameraTitle" style="margin-bottom:12px;">Take Profile Photo</h3>
+      <video id="profileCameraVideo" autoplay playsinline muted
+             style="width:100%;max-height:55vh;min-height:220px;object-fit:cover;background:#111;border-radius:12px;"></video>
+      <canvas id="profileCameraCanvas" class="hidden"></canvas>
+      <p id="profileCameraMessage" class="muted" style="margin:10px 0;" aria-live="polite">Allow camera access when your browser asks.</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="takeCameraSnapshotBtn">Capture Photo</button>
+        <button type="button" class="btn btn-light" id="switchProfileCameraBtn">Switch to Back Camera</button>
+        <button type="button" class="btn btn-light" id="closeProfileCameraBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
 
   <script>
 
@@ -1102,6 +2114,9 @@ td, th {
 
     let currentView = 'member';
     let isAdminLoggedIn = false;
+    let currentAdminProfile = null;
+    const STAFF_ROLES = ['main', 'secretary', 'treasurer', 'pastor'];
+    const STAFF_ROLE_LABELS = { main: 'Main Administrator', secretary: 'Secretary', treasurer: 'Treasurer', pastor: 'Pastor' };
     let attendanceOpen = false;
     let registrationOpen = false;
     let attendanceOpenedAt = '';
@@ -1113,16 +2128,24 @@ td, th {
     // still use local browser storage and are not yet migrated.
     let members = [];
     let attendance = [];
+    let publicAttendanceRows = [];
     let records = [];
     let memberAttendanceHistory = [];
     let kidsRecords = JSON.parse(localStorage.getItem('church_kids_records') || '[]');
     let editingMemberId = null;
     let selectedAttendanceMemberId = null;
+    let selectedAttendanceAlreadyMarked = false;
 
     const todayLocalDate = () => {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     };
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[ch]);
+    }
 
     function mapMember(row) {
       return {
@@ -1133,7 +2156,8 @@ td, th {
         memberClass: row.member_class || '',
         dob: row.dob || '',
         phone: row.phone || '',
-        note: row.note || ''
+        note: row.note || '',
+        profileImageUrl: row.profile_image_url || row.profileImageUrl || ''
       };
     }
 
@@ -1144,10 +2168,27 @@ td, th {
         renderAll();
         return;
       }
-      const { data: authData } = await churchSupabase.auth.getSession();
-      if (authData?.session) await verifyAdminSession(authData.session.user);
-
       if (isAdminLoggedIn) {
+        // Reconcile older status records too. Some deceased/transferred records
+        // may have been saved before automatic deactivation was added.
+        const { data: savedStatusRows, error: savedStatusError } = await churchSupabase
+          .from('member_status_records')
+          .select('member_number')
+          .in('record_type', ['deceased', 'transferred']);
+        if (savedStatusError) throw savedStatusError;
+
+        const inactiveNumbers = [...new Set((savedStatusRows || [])
+          .map(row => String(row.member_number || '').trim())
+          .filter(Boolean))];
+
+        if (inactiveNumbers.length) {
+          const { error: reconcileError } = await churchSupabase
+            .from('members')
+            .update({ is_active: false })
+            .in('member_number', inactiveNumbers);
+          if (reconcileError) throw reconcileError;
+        }
+
         const { data: memberRows, error: memberError } = await churchSupabase
           .from('members').select('*').eq('is_active', true).order('full_name');
         if (memberError) throw memberError;
@@ -1174,18 +2215,61 @@ td, th {
           }));
         }
       } else {
-        // Public members cannot SELECT the protected tables. Status and
-        // self-service actions are exposed only through narrowly scoped RPCs.
-        members = [];
+        // Public directory data is returned by a SECURITY DEFINER RPC that
+        // exposes only safe member fields (never phone numbers or private notes).
+        const { data: publicRows, error: publicMembersError } = await churchSupabase.rpc('get_public_members');
+        if (publicMembersError) throw publicMembersError;
+        members = (publicRows || []).map(row => ({
+          id: row.id,
+          fullName: row.full_name || '',
+          memberNumber: row.member_number || '',
+          gender: row.gender || '',
+          memberClass: row.member_class || '',
+          dob: row.dob || '',
+          phone: row.phone || '',
+          note: '',
+          profileImageUrl: row.profile_image_url || ''
+        }));
         attendance = [];
         const { data: status, error } = await churchSupabase.rpc('get_public_church_status');
         if (error) throw error;
         attendanceOpen = !!status?.attendance_open;
         registrationOpen = !!status?.registration_open;
+
+        const { data: publicAttendance, error: publicAttendanceError } =
+          await churchSupabase.rpc('get_public_member_attendance');
+        if (publicAttendanceError) throw publicAttendanceError;
+
+        // Only include attendance rows belonging to members returned by the
+        // active public directory. This keeps deceased/transferred members
+        // out of public totals and present counts as well.
+        const activeMemberNumbers = new Set(
+          members.map(member => String(member.memberNumber || '').trim()).filter(Boolean)
+        );
+        publicAttendanceRows = (publicAttendance || []).filter(row =>
+          activeMemberNumbers.has(String(row.member_number || '').trim())
+        );
+      }
+
+      if (isAdminLoggedIn) {
+        publicAttendanceRows = members.map(member => {
+          const record = attendance.find(a => a.memberId === member.id);
+          return {
+            full_name: member.fullName,
+            member_number: member.memberNumber,
+            member_class: member.memberClass,
+            present: !!record?.present,
+            marked_at: record?.markedAt || null
+          };
+        });
       }
 
       if (isAdminLoggedIn) await loadChurchSettings();
       renderAll();
+      if (document.getElementById('searchInput')?.value.trim()) renderSearchResults();
+      if (isAdminLoggedIn && currentAdminProfile?.admin_level === 'main') {
+        await loadAdminApplications();
+      }
     }
 
     async function loadChurchSettings() {
@@ -1199,12 +2283,45 @@ td, th {
     }
 
     async function verifyAdminSession(user) {
-      if (!user) { isAdminLoggedIn = false; return false; }
+      if (!user) {
+        isAdminLoggedIn = false;
+        currentAdminProfile = null;
+        return false;
+      }
       const { data: profile, error } = await churchSupabase.from('profiles')
-        .select('role').eq('id', user.id).maybeSingle();
+        .select('id, full_name, role, admin_level, approval_status, staff_role')
+        .eq('id', user.id).maybeSingle();
       if (error) throw error;
-      isAdminLoggedIn = profile?.role === 'admin';
+      currentAdminProfile = profile || null;
+      isAdminLoggedIn = profile?.role === 'admin' && profile?.approval_status === 'approved';
       return isAdminLoggedIn;
+    }
+
+    function getStaffRole() {
+      if (!isAdminLoggedIn) return '';
+      return currentAdminProfile?.staff_role || (currentAdminProfile?.admin_level === 'main' ? 'main' : 'secretary');
+    }
+
+    function canManageStaff() { return isAdminLoggedIn && getStaffRole() === 'main'; }
+    function canManageRecords() { return isAdminLoggedIn && ['main', 'secretary'].includes(getStaffRole()); }
+    function canViewRecords() { return isAdminLoggedIn && ['main', 'secretary', 'pastor'].includes(getStaffRole()); }
+    function canViewFinance() { return isAdminLoggedIn && ['main', 'treasurer', 'pastor'].includes(getStaffRole()); }
+    function canEditFinance() { return isAdminLoggedIn && ['main', 'treasurer'].includes(getStaffRole()); }
+
+    function updateStaffInterface() {
+      const role = getStaffRole();
+      const financeNav = document.querySelector('.nav-btn[data-section="finance"]');
+      const recordsNav = document.querySelector('.nav-btn[data-section="records"]');
+      if (recordsNav) recordsNav.style.display = canViewRecords() ? 'block' : 'none';
+      if (financeNav) financeNav.style.display = canViewFinance() ? 'block' : 'none';
+      const uploadCard = document.getElementById('recordUploadCard');
+      if (uploadCard) uploadCard.classList.toggle('hidden', !canManageRecords());
+      const entryCard = document.getElementById('financeEntryCard');
+      if (entryCard) entryCard.classList.toggle('hidden', !canEditFinance());
+      const roleNotice = document.getElementById('recordsRoleNotice');
+      if (roleNotice) roleNotice.textContent = `Signed in as: ${STAFF_ROLE_LABELS[role] || 'Staff'}.`;
+      const financeRole = document.getElementById('financeRole');
+      if (financeRole) financeRole.textContent = STAFF_ROLE_LABELS[role] || '—';
     }
 
     async function saveSetting(key, value) {
@@ -1274,9 +2391,14 @@ td, th {
     const CHURCH_LOGO = "sda logo.png";
 
     function goToSection(sectionId) {
-      if (["dashboard", "member-registration", "attendance", "absentees", "records"].includes(sectionId) && !isAdminLoggedIn) {
+      const protectedSections = ["dashboard", "member-registration", "attendance", "absentees", "absentee-history", "member-status", "records", "finance", "admin-management"];
+      if (protectedSections.includes(sectionId) && !isAdminLoggedIn) {
         currentView = 'admin';
         showAdminLoginOnly();
+        return;
+      }
+      if (sectionId === 'admin-management' && currentAdminProfile?.admin_level !== 'main') {
+        alert('Only the Main Administrator can manage administrator accounts.');
         return;
       }
 
@@ -1288,6 +2410,8 @@ td, th {
 
       const targetSection = document.getElementById(sectionId);
       if (targetSection) targetSection.classList.add('active');
+      if (sectionId === 'absentee-history' && isAdminLoggedIn) loadAbsenteeHistory();
+      if (sectionId === 'member-status' && isAdminLoggedIn) loadMemberStatusRecords();
 
       sidebar.classList.remove('show');
     }
@@ -1308,7 +2432,9 @@ td, th {
     function updateViewMode() {
       navButtons.forEach(btn => {
         const role = btn.dataset.role;
-        btn.style.display = role === currentView ? 'block' : 'none';
+        const mainOnlyBlocked = btn.dataset.mainOnly === 'true' &&
+          currentAdminProfile?.admin_level !== 'main';
+        btn.style.display = role === currentView && !mainOnlyBlocked ? 'block' : 'none';
       });
 
       if (currentView === 'admin') {
@@ -1330,10 +2456,80 @@ td, th {
       });
     });
 
-    document.getElementById('switchAdminView').addEventListener('click', () => {
-      currentView = 'admin';
-      showAdminLoginOnly();
-    });
+   
+document.getElementById('switchAdminView').addEventListener('click', async () => {
+
+  // If already authenticated, return directly to the dashboard.
+  if (isAdminLoggedIn && currentAdminProfile) {
+    currentView = 'admin';
+    await loadChurchData();
+    updateViewMode();
+    return;
+  }
+
+  // Otherwise, show the administrator login page.
+  currentView = 'admin';
+  showAdminLoginOnly();
+
+  const passwordInput = document.getElementById('adminPassword');
+
+  if (passwordInput) {
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+});
+
+
+    if (churchSupabase) {
+      churchSupabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          currentView = 'admin';
+          showAdminLoginOnly();
+          recoveryCard.classList.remove('hidden');
+          forgotPasswordMessage.textContent = '';
+          passwordRecoveryMessage.textContent = 'Choose a new password for your administrator account.';
+          return;
+        }
+       
+if (event === 'INITIAL_SESSION') {
+  // Restore the administrator dashboard when the page is refreshed.
+  setTimeout(async () => {
+    try {
+      const { data: sessionData } = await churchSupabase.auth.getSession();
+      const user = sessionData?.session?.user;
+
+      if (!user) {
+        currentView = 'member';
+        updateViewMode();
+        return;
+      }
+
+      const allowed = await verifyAdminSession(user);
+
+      if (allowed) {
+        currentView = 'admin';
+        await loadChurchData();
+        updateViewMode();
+
+        if (currentAdminProfile?.admin_level === 'main') {
+          await loadAdminApplications();
+        }
+      } else {
+        currentView = 'member';
+        updateViewMode();
+      }
+    } catch (err) {
+      console.error('Could not restore administrator session:', err);
+    }
+  }, 0);
+
+  return;
+}
+
+if (event === 'SIGNED_IN') return;
+
+      });
+    }
 
     document.getElementById('switchMemberView').addEventListener('click', () => {
       currentView = 'member';
@@ -1352,9 +2548,151 @@ td, th {
       const { error } = await churchSupabase.auth.signOut();
       if (error) return alert(error.message);
       isAdminLoggedIn = false;
+      currentAdminProfile = null;
       currentView = 'member';
       await loadChurchData();
       updateViewMode();
+    });
+
+
+    // Password recovery for existing administrators and administrator applicants.
+    const forgotAdminPasswordBtn = document.getElementById('forgotAdminPasswordBtn');
+    const forgotPasswordMessage = document.getElementById('forgotPasswordMessage');
+    const recoveryCard = document.getElementById('adminPasswordRecoveryCard');
+    const passwordRecoveryMessage = document.getElementById('passwordRecoveryMessage');
+
+    forgotAdminPasswordBtn?.addEventListener('click', async () => {
+      if (!churchSupabase) {
+        forgotPasswordMessage.textContent = 'Supabase is not connected. Please try again later.';
+        return;
+      }
+
+      const email = document.getElementById('adminEmail').value.trim().toLowerCase();
+      if (!email) {
+        forgotPasswordMessage.textContent = 'Enter your administrator account email above, then click Forgot Password again.';
+        document.getElementById('adminEmail').focus();
+        return;
+      }
+
+      forgotAdminPasswordBtn.disabled = true;
+      forgotAdminPasswordBtn.textContent = 'Sending reset link...';
+      forgotPasswordMessage.textContent = '';
+
+      try {
+        const redirectTo = window.location.origin + window.location.pathname;
+        const { error } = await churchSupabase.auth.resetPasswordForEmail(email, {
+          redirectTo
+        });
+        if (error) throw error;
+
+        // Use a neutral message so the page does not reveal whether an email is registered.
+        forgotPasswordMessage.textContent =
+          'If an account exists for this email, a password reset link has been sent. Check your inbox and spam folder.';
+      } catch (err) {
+        forgotPasswordMessage.textContent = 'Could not send reset link: ' + err.message;
+      } finally {
+        forgotAdminPasswordBtn.disabled = false;
+        forgotAdminPasswordBtn.textContent = 'Forgot Password?';
+      }
+    });
+
+    document.getElementById('adminPasswordRecoveryForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!churchSupabase) {
+        passwordRecoveryMessage.textContent = 'Supabase is not connected.';
+        return;
+      }
+
+      const newPassword = document.getElementById('recoveryNewPassword').value;
+      const confirmPassword = document.getElementById('recoveryConfirmPassword').value;
+      const saveButton = document.getElementById('saveRecoveredPasswordBtn');
+
+      if (newPassword.length < 8) {
+        passwordRecoveryMessage.textContent = 'Your password must contain at least 8 characters.';
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        passwordRecoveryMessage.textContent = 'The passwords do not match.';
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = 'Updating...';
+      passwordRecoveryMessage.textContent = '';
+
+      try {
+        const { error } = await churchSupabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+
+        passwordRecoveryMessage.textContent =
+          'Your password has been updated. You can now sign in with your new password.';
+        document.getElementById('adminPasswordRecoveryForm').reset();
+        await churchSupabase.auth.signOut();
+        recoveryCard.classList.add('hidden');
+        currentView = 'admin';
+        showAdminLoginOnly();
+        forgotPasswordMessage.textContent = 'Password updated successfully. Please log in with your new password.';
+      } catch (err) {
+        passwordRecoveryMessage.textContent = 'Could not update password: ' + err.message;
+      } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Update Password';
+      }
+    });
+
+    document.getElementById('cancelPasswordRecoveryBtn')?.addEventListener('click', () => {
+      recoveryCard.classList.add('hidden');
+      passwordRecoveryMessage.textContent = '';
+      document.getElementById('adminPasswordRecoveryForm').reset();
+      currentView = 'admin';
+      showAdminLoginOnly();
+    });
+
+    document.getElementById('adminSignupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const signupForm = e.currentTarget;
+      const message = document.getElementById('adminSignupMessage');
+      const fullName = document.getElementById('adminSignupName').value.trim();
+      const email = document.getElementById('adminSignupEmail').value.trim().toLowerCase();
+      const password = document.getElementById('adminSignupPassword').value;
+      const confirmPassword = document.getElementById('adminSignupConfirmPassword').value;
+
+      if (!churchSupabase) {
+        message.textContent = 'Supabase is not connected. Please try again later.';
+        return;
+      }
+      if (password.length < 8) {
+        message.textContent = 'Your password must contain at least 8 characters.';
+        return;
+      }
+      if (password !== confirmPassword) {
+        message.textContent = 'The passwords do not match.';
+        return;
+      }
+
+      const submitButton = signupForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Submitting...';
+      message.textContent = '';
+
+      try {
+        const { data, error } = await churchSupabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName } }
+        });
+        if (error) throw error;
+
+        message.textContent = data?.session
+          ? 'Application submitted. Your account is pending Main Administrator approval. You cannot access the dashboard until approved.'
+          : 'Registration submitted. Check your email if confirmation is required. Your administrator application will be pending approval.';
+        signupForm.reset();
+      } catch (err) {
+        message.textContent = 'Could not submit application: ' + err.message;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit Admin Application';
+      }
     });
 
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
@@ -1370,16 +2708,110 @@ td, th {
         if (error) throw error;
         const allowed = await verifyAdminSession(data.user);
         if (!allowed) {
+          const { data: profile } = await churchSupabase.from('profiles')
+            .select('role, approval_status').eq('id', data.user.id).maybeSingle();
           await churchSupabase.auth.signOut();
-          return alert('This account does not have administrator access.');
+          if (profile?.approval_status === 'pending') {
+            return alert('Your administrator application is still pending Main Administrator approval.');
+          }
+          if (profile?.approval_status === 'rejected') {
+            return alert('Your administrator application was not approved.');
+          }
+          if (profile?.approval_status === 'revoked') {
+            return alert('Your administrator access has been revoked. Please contact the Main Administrator.');
+          }
+          return alert('This account does not have approved administrator access.');
         }
         currentView = 'admin';
         await loadChurchData();
         updateViewMode();
+        if (currentAdminProfile?.admin_level === 'main') await loadAdminApplications();
       } catch (err) {
         alert('Could not verify administrator access: ' + err.message);
       }
     });
+
+    async function loadAdminApplications() {
+      if (!canManageStaff()) return;
+      const tbody = document.getElementById('adminApplicationsTable');
+      const message = document.getElementById('adminManagementMessage');
+      tbody.innerHTML = '<tr><td colspan="5">Loading administrators...</td></tr>';
+      message.textContent = '';
+      try {
+        const { data, error } = await churchSupabase.from('profiles')
+          .select('id, full_name, role, admin_level, approval_status, staff_role, created_at')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        const admins = (data || []).filter(profile => profile.role === 'admin');
+        if (!admins.length) {
+          tbody.innerHTML = '<tr><td colspan="6">No administrator applications found.</td></tr>';
+          message.textContent = 'No administrator accounts found.';
+          return;
+        }
+        tbody.innerHTML = admins.map(profile => {
+          const status = String(profile.approval_status || 'pending');
+          const safeId = String(profile.id).replace(/[^a-zA-Z0-9-]/g, '');
+          const name = escapeAdminHtml(profile.full_name || 'Unnamed applicant');
+          const level = escapeAdminHtml(profile.admin_level || 'additional');
+          const staffRole = profile.staff_role || (profile.admin_level === 'main' ? 'main' : 'secretary');
+          const roleOptions = STAFF_ROLES.map(role => `<option value="${role}" ${staffRole === role ? 'selected' : ''}>${STAFF_ROLE_LABELS[role]}</option>`).join('');
+          const actionButtons = profile.admin_level === 'main'
+            ? '<span class="muted">Main Admin</span>'
+            : `<div class="btn-row">
+                ${status !== 'approved' ? `<button class="btn btn-success" type="button" onclick="reviewAdminAccess('${safeId}','approved')">Approve</button>` : ''}
+                ${status !== 'rejected' ? `<button class="btn btn-warning" type="button" onclick="reviewAdminAccess('${safeId}','rejected')">Reject</button>` : ''}
+                ${status !== 'revoked' ? `<button class="btn btn-danger" type="button" onclick="reviewAdminAccess('${safeId}','revoked')">Revoke</button>` : ''}
+              </div>`;
+          return `<tr><td>${name}</td><td><small>${safeId}</small></td><td>${level}</td><td><select aria-label="Staff role for ${name}" onchange="changeChurchStaffRole('${safeId}',this.value)" ${profile.admin_level === 'main' ? 'disabled' : ''}>${roleOptions}</select></td><td><span class="pill ${status === 'approved' ? 'present' : status === 'pending' ? 'open' : 'absent'}">${escapeAdminHtml(status)}</span></td><td>${actionButtons}</td></tr>`;
+        }).join('');
+        message.textContent = `Showing ${admins.length} administrator account(s).`;
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6">Could not load administrator accounts.</td></tr>';
+        message.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function escapeAdminHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    window.reviewAdminAccess = async function(userId, status) {
+      if (!isAdminLoggedIn || currentAdminProfile?.admin_level !== 'main') {
+        return alert('Only the Main Administrator can manage administrator accounts.');
+      }
+      if (!['approved', 'rejected', 'revoked'].includes(status)) {
+        return alert('Invalid administrator status.');
+      }
+      const action = status === 'approved' ? 'approve' : status === 'rejected' ? 'reject' : 'revoke';
+      if (!confirm(`Are you sure you want to ${action} this administrator?`)) return;
+      try {
+        const { error } = await churchSupabase.rpc('review_admin_application', {
+          target_user_id: userId,
+          new_status: status
+        });
+        if (error) throw error;
+        document.getElementById('adminManagementMessage').textContent = `Administrator ${action}d successfully.`;
+        await loadAdminApplications();
+      } catch (err) {
+        alert('Could not update administrator status: ' + err.message);
+      }
+    };
+
+
+    window.changeChurchStaffRole = async function(userId, staffRole) {
+      if (!canManageStaff()) return alert('Only the Main Administrator can assign staff roles.');
+      if (!STAFF_ROLES.includes(staffRole) || staffRole === 'main') return alert('Invalid staff role.');
+      if (!confirm(`Assign ${STAFF_ROLE_LABELS[staffRole]} access to this administrator?`)) { await loadAdminApplications(); return; }
+      try {
+        const { error } = await churchSupabase.rpc('set_church_staff_role', { target_user_id: userId, new_staff_role: staffRole });
+        if (error) throw error;
+        await loadAdminApplications(); alert('Staff role updated successfully.');
+      } catch (err) { alert('Could not update staff role: ' + err.message); await loadAdminApplications(); }
+    };
+
+    document.getElementById('refreshAdminListBtn').addEventListener('click', loadAdminApplications);
 
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('show');
@@ -1443,12 +2875,105 @@ td, th {
     function resetMemberEditState() {
       editingMemberId = null;
       memberForm.reset();
+      document.getElementById('profilePhotoPreview')?.removeAttribute('src');
       updateMemberEditUI();
     }
 
     cancelMemberEditBtn.addEventListener('click', () => {
       resetMemberEditState();
     });
+
+    // Profile photos are optional. Photos are stored in Supabase Storage,
+    // while the public URL is saved in members.profile_image_url.
+    const PROFILE_PHOTO_BUCKET = 'member-profile-photos';
+    const MAX_PROFILE_PHOTO_BYTES = 3 * 1024 * 1024;
+
+    function bindProfilePhotoPreview(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+
+      input.addEventListener('change', () => {
+        const file = input.files?.[0];
+        if (!file) {
+          preview.removeAttribute('src');
+          preview.classList.remove('has-photo');
+          return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+          alert('Please choose a JPG, PNG or WebP image.');
+          input.value = '';
+          preview.removeAttribute('src');
+          return;
+        }
+        if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+          alert('Profile photo must not exceed 3 MB.');
+          input.value = '';
+          preview.removeAttribute('src');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = event => {
+          preview.src = event.target.result;
+          preview.classList.add('has-photo');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    bindProfilePhotoPreview('profilePhoto', 'profilePhotoPreview');
+    bindProfilePhotoPreview('selfProfilePhoto', 'selfProfilePhotoPreview');
+
+    async function uploadMemberProfilePhoto(file, memberNumber) {
+      if (!file) return null;
+      if (!memberNumber) throw new Error('The member serial number was not returned. The photo was not uploaded.');
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        throw new Error('Choose a JPG, PNG or WebP profile photo.');
+      }
+      if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+        throw new Error('Profile photo must not exceed 3 MB.');
+      }
+
+      const extension = file.type === 'image/png' ? 'png' :
+        file.type === 'image/webp' ? 'webp' : 'jpg';
+      const safeSerial = String(memberNumber).replace(/[^a-zA-Z0-9_-]/g, '');
+      const filePath = `${safeSerial}/${Date.now()}.${extension}`;
+
+      const { error: uploadError } = await churchSupabase.storage
+        .from(PROFILE_PHOTO_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type
+        });
+      if (uploadError) throw uploadError;
+
+      const { data } = churchSupabase.storage
+        .from(PROFILE_PHOTO_BUCKET)
+        .getPublicUrl(filePath);
+      return data.publicUrl;
+    }
+
+    async function saveProfilePhotoForMember(memberNumber, phone, file, memberId = null) {
+      if (!file) { message.textContent = 'Attach a document or generate one first.'; return; }
+      const publicUrl = await uploadMemberProfilePhoto(file, memberNumber);
+      if (memberId) {
+        const { error } = await churchSupabase
+          .from('members')
+          .update({ profile_image_url: publicUrl })
+          .eq('id', memberId);
+        if (error) throw error;
+      } else {
+        // Public self-registration uses a SECURITY DEFINER RPC rather than
+        // granting anonymous users direct UPDATE access to the members table.
+        const { error } = await churchSupabase.rpc('set_member_profile_photo', {
+          p_member_number: memberNumber,
+          p_phone: phone,
+          p_profile_image_url: publicUrl
+        });
+        if (error) throw error;
+      }
+    }
 
     memberForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1465,6 +2990,7 @@ td, th {
         return alert('Please fill all required fields.');
       }
       const wasEditing = !!editingMemberId;
+      const selectedPhoto = document.getElementById('profilePhoto').files?.[0] || null;
       try {
         let result;
         if (editingMemberId) {
@@ -1479,6 +3005,14 @@ td, th {
           result = { data };
         }
         if (result.error) throw result.error;
+
+        const savedMember = wasEditing ? members.find(member => member.id === editingMemberId) : null;
+        const savedSerial = result.data?.memberNumber || result.data?.member_number ||
+          savedMember?.memberNumber || document.getElementById('memberNumber').value;
+        if (selectedPhoto) {
+          await saveProfilePhotoForMember(savedSerial, payload.phone, selectedPhoto, wasEditing ? editingMemberId : null);
+        }
+
         resetMemberEditState();
         await loadChurchData();
         alert(wasEditing ? 'Member updated successfully.' : `Member saved successfully. Serial: ${result.data?.memberNumber || result.data?.member_number || 'assigned by database'}`);
@@ -1500,13 +3034,20 @@ td, th {
       if (!payload.p_full_name || !payload.p_gender || !payload.p_member_class || !payload.p_phone) {
         return alert('Please fill all required fields.');
       }
+      const selectedPhoto = document.getElementById('selfProfilePhoto').files?.[0] || null;
       try {
         const { data, error } = await churchSupabase.rpc('register_church_member', payload);
         if (error) throw error;
+        const registeredSerial = data?.memberNumber || data?.member_number || '';
+        if (selectedPhoto) {
+          await saveProfilePhotoForMember(registeredSerial, payload.p_phone, selectedPhoto);
+        }
         memberSelfRegisterForm.reset();
+        document.getElementById('selfProfilePhotoPreview').removeAttribute('src');
         document.getElementById('selfMemberNumber').value = data?.memberNumber || '';
         alert(`Registration successful. Your church serial number is ${data?.memberNumber || 'available from the church administrator'}.`);
         await refreshPublicStatus();
+        await loadChurchData();
         goToSection('member-home');
       } catch (err) {
         alert('Registration failed: ' + err.message);
@@ -1532,8 +3073,12 @@ td, th {
 
       wrap.innerHTML = members.map(member => `
         <div class="member-card">
-          <h4>${member.fullName}</h4>
-          <p class="muted">No: ${member.memberNumber}</p>
+          <div class="member-card-heading">
+            ${member.profileImageUrl
+              ? `<img class="member-avatar" src="${escapeHtml(member.profileImageUrl)}" alt="${escapeHtml(member.fullName)} profile photo">`
+              : `<div class="member-avatar member-avatar-placeholder" aria-label="No profile photo">${escapeHtml(String(member.fullName || '?').trim().charAt(0).toUpperCase())}</div>`}
+            <div><h4>${escapeHtml(member.fullName)}</h4><p class="muted">No: ${escapeHtml(member.memberNumber)}</p></div>
+          </div>
           <p class="muted">Gender: ${member.gender}</p>
           <p class="muted">Class: ${member.memberClass}</p>
           <p class="muted">Phone: ${member.phone || 'N/A'}</p>
@@ -1585,12 +3130,24 @@ td, th {
       document.getElementById('dob').value = member.dob || '';
       document.getElementById('phone').value = member.phone || '';
       document.getElementById('note').value = member.note || '';
+      const photoPreview = document.getElementById('profilePhotoPreview');
+      if (photoPreview) {
+        if (member.profileImageUrl) photoPreview.src = member.profileImageUrl;
+        else photoPreview.removeAttribute('src');
+      }
 
       updateMemberEditUI();
       goToSection('member-registration');
     }
 
-    function renderSearchResults() {
+    function updateSearchPrivacyColumns() {
+  document.querySelectorAll('.admin-search-private').forEach(cell => {
+    cell.style.display = isAdminLoggedIn ? '' : 'none';
+  });
+}
+
+function renderSearchResults() {
+  updateSearchPrivacyColumns();
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const cleanQuery = query.replace(/\s+/g, '');
   const tbody = document.getElementById('searchResults');
@@ -1606,11 +3163,13 @@ td, th {
 
   const matchedMembers = members.filter(member => {
     const name = String(member.fullName || '').toLowerCase();
-    const phone = String(member.phone || '').toLowerCase().replace(/\s+/g, '');
-    return name.includes(query) || phone.includes(cleanQuery);
+    const serial = String(member.memberNumber || '').toLowerCase().replace(/\s+/g, '');
+    const phone = String(member.phone || '').replace(/\D/g, '');
+    const phoneQuery = query.replace(/\D/g, '');
+    return name.includes(query) || serial.includes(cleanQuery) || (phoneQuery.length >= 3 && phone.includes(phoneQuery));
   });
 
-  const matchedKids = kidsRecords.filter(kid => {
+  const matchedKids = isAdminLoggedIn ? kidsRecords.filter(kid => {
     const kidName = String(kid.name || '').toLowerCase();
     const kidPhone = String(kid.phone || '').toLowerCase().replace(/\s+/g, '');
     const guardian = String(kid.guardian || '').toLowerCase();
@@ -1624,7 +3183,7 @@ td, th {
       linkedMemberName.includes(query) ||
       linkedMemberNumber.includes(query)
     );
-  });
+  }) : [];
 
   let rows = [];
 
@@ -1643,18 +3202,12 @@ td, th {
       <tr>
         <td>${member.fullName}</td>
         <td>${member.memberNumber}</td>
-        <td>
-          ${member.phone ? `<a href="tel:${member.phone}" class="muted">${member.phone}</a>` : 'N/A'}
-        </td>
+        <td>${member.phone ? `<a href="tel:${escapeHtml(member.phone)}" class="muted">${escapeHtml(member.phone)}</a>` : 'N/A'}</td>
         <td>${member.gender || 'N/A'}</td>
         <td>${member.memberClass || 'N/A'}</td>
         <td>${member.dob || 'N/A'}</td>
         <td><span class="pill open">Member</span></td>
-        <td>${
-          relatedKids.length
-            ? `Parent/Guardian of: ${relatedKids.map(k => k.name).join(', ')}`
-            : (member.note || 'Church member')
-        }</td>
+        ${isAdminLoggedIn ? `<td>${relatedKids.length ? `Parent/Guardian of: ${relatedKids.map(k => k.name).join(', ')}` : (member.note || 'Church member')}</td>` : ''}
       </tr>
     `);
 
@@ -1868,7 +3421,30 @@ td, th {
       // Attendance rows are loaded from Supabase; never synthesize local rows.
     }
 
+    function renderPublicAttendanceRegister() {
+      const tbody = document.getElementById('publicAttendanceTable');
+      if (!tbody) return;
+      if (!publicAttendanceRows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No attendance register is available for today.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = publicAttendanceRows.map(row => {
+        const present = !!row.present;
+        const markedAt = row.marked_at
+          ? new Date(row.marked_at).toLocaleTimeString('en-GH', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Accra' })
+          : '—';
+        return `<tr>
+          <td>${escapeHtml(row.full_name || '')}</td>
+          <td>${escapeHtml(row.member_number || '')}</td>
+          <td>${escapeHtml(row.member_class || '')}</td>
+          <td><span class="pill ${present ? 'present' : 'absent'}">${present ? 'Present' : 'Absent'}</span></td>
+          <td>${present ? markedAt : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
     function renderAttendance() {
+      renderPublicAttendanceRegister();
       const tbody = document.getElementById('attendanceTable');
       const pill = document.getElementById('attendancePill');
       const sessionStatus = document.getElementById('sessionStatus');
@@ -1916,36 +3492,133 @@ td, th {
       } catch (err) { alert('Could not update attendance: ' + err.message); }
     };
 
-    document.getElementById('openAttendanceBtn').addEventListener('click', async () => {
-      try {
-        const now = new Date().toISOString();
-        const { data, error } = await churchSupabase.from('attendance_sessions').upsert({
-          attendance_type: 'members', session_date: todayLocalDate(),
-          opened_at: now, closed_at: null, is_open: true
-        }, { onConflict: 'attendance_type,session_date' }).select().single();
-        if (error) throw error;
-        currentAttendanceSessionId = data.id;
-        await saveSetting('attendance_open', true);
-        attendanceOpen = true;
-        attendance = [];
-        await loadChurchData();
-      } catch (err) { alert('Could not open attendance: ' + err.message); }
-    });
+ 
+document.getElementById('openAttendanceBtn').addEventListener('click', async () => {
 
-    document.getElementById('closeAttendanceBtn').addEventListener('click', async () => {
-      if (!currentAttendanceSessionId) return alert('There is no attendance session for today.');
-      try {
-        const closedAt = new Date().toISOString();
-        const { error } = await churchSupabase.from('attendance_sessions')
-          .update({ is_open: false, closed_at: closedAt }).eq('id', currentAttendanceSessionId);
-        if (error) throw error;
-        await saveSetting('attendance_open', false);
-        attendanceOpen = false;
-        attendanceClosedAt = closedAt;
-        await loadChurchData();
-        renderAbsentees();
-      } catch (err) { alert('Could not close attendance: ' + err.message); }
-    });
+  // Prevent opening an already-open session
+  if (attendanceOpen) {
+    return alert('Attendance is already open.');
+  }
+
+  // Ask for confirmation before opening
+  const confirmed = confirm(
+    'CONFIRM OPENING ATTENDANCE\n\n' +
+    'Are you sure you want to open attendance for today?\n\n' +
+    'Members will be able to mark their attendance.'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const now = new Date().toISOString();
+
+    const { data, error } = await churchSupabase
+      .from('attendance_sessions')
+      .upsert({
+        attendance_type: 'members',
+        session_date: todayLocalDate(),
+        opened_at: now,
+        closed_at: null,
+        is_open: true
+      }, {
+        onConflict: 'attendance_type,session_date'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    currentAttendanceSessionId = data.id;
+
+    await saveSetting('attendance_open', true);
+
+    attendanceOpen = true;
+    attendance = [];
+
+    await loadChurchData();
+
+    alert('Attendance opened successfully. Members can now mark their attendance.');
+
+  } catch (err) {
+    alert('Could not open attendance: ' + err.message);
+  }
+});
+
+
+   
+document.getElementById('closeAttendanceBtn').addEventListener('click', async () => {
+
+  // Check whether an attendance session exists
+  if (!currentAttendanceSessionId) {
+    return alert('There is no attendance session for today.');
+  }
+
+  // Prevent closing an already-closed session
+  if (!attendanceOpen) {
+    return alert('Attendance is already closed.');
+  }
+
+  // Confirmation before closing attendance
+  const confirmed = confirm(
+    'CONFIRM CLOSING ATTENDANCE\n\n' +
+    'Are you sure you want to close attendance for today?\n\n' +
+    'Members will no longer be able to mark attendance.\n\n' +
+    'The attendance and absentee records will be finalized.'
+  );
+
+  // Cancel means no changes will be made
+  if (!confirmed) return;
+
+  try {
+    const closedAt = new Date().toISOString();
+
+    const { error } = await churchSupabase
+      .from('attendance_sessions')
+      .update({
+        is_open: false,
+        closed_at: closedAt
+      })
+      .eq('id', currentAttendanceSessionId);
+
+    if (error) throw error;
+
+    await saveSetting('attendance_open', false);
+
+    attendanceOpen = false;
+    attendanceClosedAt = closedAt;
+
+    // Save permanent attendance and absentee history
+    let snapshotWarning = '';
+
+    try {
+      await saveAbsenteeHistorySnapshot(currentAttendanceSessionId);
+    } catch (snapshotError) {
+      console.error(
+        'Absentee snapshot could not be saved:',
+        snapshotError
+      );
+
+      snapshotWarning =
+        '\nAttendance was closed, but the permanent history snapshot could not be saved. Run the supplied SQL and retry the snapshot.';
+    }
+
+    await loadChurchData();
+    renderAbsentees();
+
+    if (
+      document
+        .getElementById('absentee-history')
+        .classList.contains('active')
+    ) {
+      await loadAbsenteeHistory();
+    }
+
+    alert('Attendance closed successfully.' + snapshotWarning);
+
+  } catch (err) {
+    alert('Could not close attendance: ' + err.message);
+  }
+});
 
     document.getElementById('markAllPresentBtn').addEventListener('click', async () => {
       if (!attendanceOpen || !currentAttendanceSessionId) return alert('Open attendance first.');
@@ -1974,6 +3647,9 @@ td, th {
 
     function hideMemberPreview() {
   selectedAttendanceMemberId = null;
+  selectedAttendanceAlreadyMarked = false;
+  const confirmBtn = document.getElementById('confirmMemberAttendanceBtn');
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm Attendance'; }
   document.getElementById('memberPreviewCard').classList.add('hidden');
   document.getElementById('previewFullName').textContent = 'N/A';
   document.getElementById('previewMemberNumber').textContent = 'N/A';
@@ -1998,6 +3674,16 @@ function showMemberPreview(member) {
   document.getElementById('previewStatus').textContent = record && record.present ? 'Already marked present' : 'Ready to mark';
 }
 
+document.getElementById('refreshPublicAttendanceBtn')?.addEventListener('click', async () => {
+  const tbody = document.getElementById('publicAttendanceTable');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5">Refreshing...</td></tr>';
+  try {
+    await loadChurchData();
+  } catch (err) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5">Could not load register: ${escapeHtml(err.message)}</td></tr>`;
+  }
+});
+
 document.getElementById('memberMarkAttendanceBtn').addEventListener('click', async () => {
   const inputValue = document.getElementById('memberAttendanceNumber').value.trim();
   const result = document.getElementById('memberAttendanceResult');
@@ -2010,32 +3696,88 @@ document.getElementById('memberMarkAttendanceBtn').addEventListener('click', asy
       result.textContent = 'No registered member was found. Registration must be completed first.';
       return;
     }
-    selectedAttendanceMemberId = inputValue;
+    // Check the church-wide attendance register as well as the lookup RPC.
+    // This prevents a member from being offered the mark button again after
+    // the page has been refreshed or the member searches a second time.
+    const existingPublicRecord = (publicAttendanceRows || []).find(row =>
+      String(row.member_number || '').trim().toLowerCase() ===
+      String(data.memberNumber || '').trim().toLowerCase()
+    );
+    selectedAttendanceAlreadyMarked = !!data.alreadyMarked || !!existingPublicRecord?.present;
+    selectedAttendanceMemberId = selectedAttendanceAlreadyMarked ? null : inputValue;
     document.getElementById('memberPreviewCard').classList.remove('hidden');
     document.getElementById('previewFullName').textContent = data.fullName || 'N/A';
     document.getElementById('previewMemberNumber').textContent = data.memberNumber || 'N/A';
-    document.getElementById('previewPhone').textContent = data.phone || 'N/A';
+    // Prefer the full phone returned by the attendance lookup. If the RPC
+    // returns only a masked value, use the matching full phone from the
+    // already-loaded public member directory.
+    const normalizePhoneForMatch = value => {
+      let digits = String(value || '').replace(/\\D/g, '');
+      if (digits.length === 10 && digits.startsWith('0')) digits = '233' + digits.slice(1);
+      else if (digits.length === 9) digits = '233' + digits;
+      return digits;
+    };
+    const matchedDirectoryMember = members.find(member =>
+      String(member.memberNumber || '').toLowerCase() === String(data.memberNumber || '').toLowerCase() ||
+      (normalizePhoneForMatch(member.phone) &&
+       normalizePhoneForMatch(member.phone) === normalizePhoneForMatch(inputValue))
+    );
+    document.getElementById('previewPhone').textContent =
+      data.phone || data.fullPhone || matchedDirectoryMember?.phone || 'N/A';
     document.getElementById('previewGender').textContent = data.gender || 'N/A';
     document.getElementById('previewClass').textContent = data.memberClass || 'N/A';
     document.getElementById('previewDob').textContent = data.dob || 'N/A';
-    document.getElementById('previewStatus').textContent = data.alreadyMarked ? 'Already marked present' : 'Ready to mark';
-    result.textContent = data.alreadyMarked ? 'Attendance has already been recorded.' : 'Member found. Confirm attendance below.';
+    const confirmBtn = document.getElementById('confirmMemberAttendanceBtn');
+    confirmBtn.disabled = selectedAttendanceAlreadyMarked;
+    confirmBtn.textContent = selectedAttendanceAlreadyMarked ? 'Already Marked' : 'Confirm Attendance';
+    document.getElementById('previewStatus').textContent = selectedAttendanceAlreadyMarked ? 'Already marked present' : 'Ready to mark';
+    result.textContent = selectedAttendanceAlreadyMarked
+      ? 'We have already marked your attendance for this session. You cannot mark it again.'
+      : 'Member found. Confirm attendance below.';
   } catch (err) { result.textContent = 'Could not find member: ' + err.message; }
 });
 
 document.getElementById('confirmMemberAttendanceBtn').addEventListener('click', async () => {
   const result = document.getElementById('memberAttendanceResult');
+  const confirmBtn = document.getElementById('confirmMemberAttendanceBtn');
+  if (selectedAttendanceAlreadyMarked || confirmBtn.disabled) {
+    result.textContent = 'We have already marked your attendance for this session. You cannot mark it again.';
+    return;
+  }
   if (!selectedAttendanceMemberId) { result.textContent = 'Search for your record first.'; return; }
+  // Lock immediately to stop double-clicks while the request is processing.
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Marking...';
   try {
     const { data, error } = await churchSupabase.rpc('mark_member_attendance', {
       p_member_identifier: selectedAttendanceMemberId
     });
     if (error) throw error;
-    result.textContent = data?.message || `${data?.fullName || 'Member'} attendance recorded successfully.`;
+    // Treat an explicit duplicate response from the database as already marked.
+    if (data?.alreadyMarked || data?.already_marked || data?.status === 'already_marked') {
+      selectedAttendanceAlreadyMarked = true;
+      selectedAttendanceMemberId = null;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Already Marked';
+      document.getElementById('previewStatus').textContent = 'Already marked present';
+      result.textContent = data?.message || 'We have already marked your attendance for this session. You cannot mark it again.';
+      await loadChurchData();
+      return;
+    }
+    selectedAttendanceAlreadyMarked = true;
+    selectedAttendanceMemberId = null;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Already Marked';
+    result.textContent = data?.message || `${data?.fullName || 'Member'} attendance recorded successfully. You cannot mark it again.`;
     document.getElementById('memberAttendanceNumber').value = '';
-    document.getElementById('previewStatus').textContent = 'Present';
-    await refreshPublicStatus();
-  } catch (err) { result.textContent = 'Attendance could not be marked: ' + err.message; }
+    document.getElementById('previewStatus').textContent = 'Already marked present';
+    await loadChurchData();
+  } catch (err) {
+    // Re-enable only after a failed request; successful/duplicate marks stay locked.
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirm Attendance';
+    result.textContent = 'Attendance could not be marked: ' + err.message;
+  }
 });
 
 document.getElementById('clearMemberPreviewBtn').addEventListener('click', () => {
@@ -2096,50 +3838,408 @@ const whatsappLink = whatsappNumber
       }).join('');
     }
 
-    const recordForm = document.getElementById('recordForm');
-    recordForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = document.getElementById('recordTitle').value.trim();
-      const category = document.getElementById('recordCategory').value;
-      const fileInput = document.getElementById('recordFile');
-      const file = fileInput.files[0];
+    // Permanent attendance snapshots preserve the exact member details and
+    // attendance status that existed when each session was closed.
+    let absenteeHistorySessions = [];
+    let selectedAbsenteeHistory = null;
 
-      if (!file) return;
+    async function saveAbsenteeHistorySnapshot(sessionId) {
+      if (!sessionId) throw new Error('No attendance session was selected.');
 
-      const fileURL = URL.createObjectURL(file);
-      records.push({
-        id: Date.now(),
-        title,
-        category,
-        fileName: file.name,
-        fileURL
+      const { data: memberRows, error: membersError } = await churchSupabase
+        .from('members')
+        .select('id,full_name,member_number,gender,member_class,phone,is_active')
+        .eq('is_active', true)
+        .order('full_name');
+      if (membersError) throw membersError;
+
+      const { data: attendanceRows, error: attendanceError } = await churchSupabase
+        .from('member_attendance')
+        .select('member_id,present,marked_at')
+        .eq('session_id', sessionId);
+      if (attendanceError) throw attendanceError;
+
+      const attendanceByMember = new Map((attendanceRows || []).map(row => [row.member_id, row]));
+      const capturedAt = new Date().toISOString();
+      const snapshots = (memberRows || []).map(member => {
+        const attendanceRow = attendanceByMember.get(member.id);
+        return {
+          session_id: sessionId,
+          member_id: member.id,
+          full_name: member.full_name || '',
+          member_number: member.member_number || '',
+          gender: member.gender || '',
+          member_class: member.member_class || '',
+          phone: member.phone || '',
+          present: attendanceRow?.present === true,
+          marked_at: attendanceRow?.marked_at || null,
+          captured_at: capturedAt
+        };
       });
 
-      saveRecords();
-      recordForm.reset();
-      renderRecords();
-    });
+      if (!snapshots.length) return;
+      // ignoreDuplicates makes the first closed-session snapshot immutable.
+      const { error: insertError } = await churchSupabase
+        .from('attendance_member_snapshots')
+        .upsert(snapshots, { onConflict: 'session_id,member_id', ignoreDuplicates: true });
+      if (insertError) throw insertError;
+    }
 
-    function renderRecords() {
-      const wrap = document.getElementById('recordsList');
-      if (!records.length) {
-        wrap.innerHTML = '<p class="muted">No records uploaded yet.</p>';
+    function historyMessageFor(member, dateLabel) {
+      return `Hello ${member.full_name || 'there'}, we missed your presence at Abelenkpe Seventh-day Adventist Church on ${dateLabel}. We hope you are doing well. You are a valued member of our church family, and we look forward to worshipping with you again. God bless you.`;
+    }
+
+    function renderAbsenteeHistorySessions() {
+      const tbody = document.getElementById('absenteeHistoryTable');
+      if (!absenteeHistorySessions.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">No closed attendance sessions were found.</td></tr>';
         return;
       }
 
-      wrap.innerHTML = records.map(record => `
-        <div class="record-item">
-          <div>
-            <strong>${record.title}</strong>
-            <p class="muted">${record.category} • ${record.fileName}</p>
-          </div>
-          <div class="btn-row">
-            <a class="btn btn-light" href="${record.fileURL}" download="${record.fileName}">Download</a>
-            <button class="btn btn-danger" onclick="deleteRecord(${record.id})">Delete</button>
-          </div>
-        </div>
-      `).join('');
+      // Each history item has the shape:
+      // { session: { id, session_date, closed_at, ... }, absentees, presentCount, totalCount }
+      tbody.innerHTML = absenteeHistorySessions.map(item => {
+        const session = item.session || {};
+        return `
+          <tr>
+            <td>${escapeHtml(formatDisplayDate(session.session_date))}</td>
+            <td>${escapeHtml(session.closed_at ? new Date(session.closed_at).toLocaleString() : 'N/A')}</td>
+            <td><span class="pill absent">${item.absentees.length}</span></td>
+            <td><span class="pill present">${item.presentCount}</span></td>
+            <td>${item.totalCount}</td>
+            <td><button class="btn btn-light" type="button" data-history-session="${escapeHtml(session.id || '')}" ${session.id ? '' : 'disabled'}>View Records</button></td>
+          </tr>
+        `;
+      }).join('');
     }
+
+    function renderAbsenteeHistoryDetail() {
+      const tbody = document.getElementById('absenteeHistoryDetailTable');
+      const downloadBtn = document.getElementById('downloadAbsenteeHistoryBtn');
+      const printBtn = document.getElementById('printAbsenteeHistoryBtn');
+      const title = document.getElementById('absenteeHistoryDetailTitle');
+      const subtitle = document.getElementById('absenteeHistoryDetailSubtitle');
+      if (!selectedAbsenteeHistory) {
+        tbody.innerHTML = '<tr><td colspan="6">No session selected.</td></tr>';
+        downloadBtn.disabled = true;
+        printBtn.disabled = true;
+        title.textContent = 'Selected Session';
+        subtitle.textContent = 'Choose a closed attendance date above.';
+        return;
+      }
+      const dateLabel = formatDisplayDate(selectedAbsenteeHistory.session.session_date);
+      title.textContent = `Absentees — ${dateLabel}`;
+      subtitle.textContent = `${selectedAbsenteeHistory.absentees.length} absent out of ${selectedAbsenteeHistory.totalCount} registered members.`;
+      downloadBtn.disabled = selectedAbsenteeHistory.absentees.length === 0;
+      printBtn.disabled = false;
+      if (!selectedAbsenteeHistory.absentees.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No absentees were recorded for this session.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = selectedAbsenteeHistory.absentees.map((member, index) => {
+        const number = normalizeWhatsAppNumber(member.phone);
+        const message = historyMessageFor(member, dateLabel);
+        const url = number ? `https://wa.me/${number}?text=${encodeURIComponent(message)}` : '';
+        return `<tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(member.full_name)}</td>
+          <td>${escapeHtml(member.member_number || 'N/A')}</td>
+          <td>${escapeHtml(member.member_class || 'N/A')}</td>
+          <td>${escapeHtml(member.phone || 'No phone')}</td>
+          <td>${url ? `<a class="btn btn-success" href="${url}" target="_blank" rel="noopener">Send WhatsApp</a>` : '<span class="muted">No phone number</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadAbsenteeHistory() {
+      if (!isAdminLoggedIn || !churchSupabase) {
+        document.getElementById('absenteeHistoryMessage').textContent = 'Administrator login is required to view absentee history.';
+        return;
+      }
+      const message = document.getElementById('absenteeHistoryMessage');
+      message.textContent = 'Loading saved attendance history...';
+      try {
+        const { data: sessions, error: sessionsError } = await churchSupabase
+          .from('attendance_sessions').select('id,session_date,opened_at,closed_at,is_open')
+          .eq('attendance_type', 'members').eq('is_open', false)
+          .order('session_date', { ascending: false });
+        if (sessionsError) throw sessionsError;
+
+        // Read permanent snapshots first. Older sessions without snapshots use
+        // the legacy reconstruction path so existing history remains visible.
+        const loaded = [];
+        let legacyCount = 0;
+        for (const session of (sessions || [])) {
+          const { data: snapshotRows, error: snapshotError } = await churchSupabase
+            .from('attendance_member_snapshots')
+            .select('member_id,full_name,member_number,gender,member_class,phone,present,marked_at')
+            .eq('session_id', session.id)
+            .order('full_name');
+          if (snapshotError) throw snapshotError;
+
+          let rows = snapshotRows || [];
+          if (!rows.length) {
+            legacyCount++;
+            const { data: memberRows, error: membersError } = await churchSupabase
+              .from('members').select('id,full_name,member_number,gender,member_class,phone,is_active')
+              .eq('is_active', true).order('full_name');
+            if (membersError) throw membersError;
+            const { data: attendanceRows, error: attendanceError } = await churchSupabase
+              .from('member_attendance').select('member_id,present,marked_at')
+              .eq('session_id', session.id);
+            if (attendanceError) throw attendanceError;
+            const attendanceByMember = new Map((attendanceRows || []).map(row => [row.member_id, row]));
+            rows = (memberRows || []).map(member => ({
+              member_id: member.id,
+              full_name: member.full_name || '',
+              member_number: member.member_number || '',
+              gender: member.gender || '',
+              member_class: member.member_class || '',
+              phone: member.phone || '',
+              present: attendanceByMember.get(member.id)?.present === true,
+              marked_at: attendanceByMember.get(member.id)?.marked_at || null
+            }));
+          }
+
+          const presentMembers = rows.filter(member => member.present === true);
+          const absentees = rows.filter(member => member.present !== true);
+          loaded.push({ session, absentees, presentCount: presentMembers.length, totalCount: rows.length });
+        }
+        absenteeHistorySessions = loaded;
+        message.textContent = `${loaded.length} closed attendance session(s) loaded. ${legacyCount ? `${legacyCount} older session(s) have no permanent snapshot yet and are being reconstructed from current records.` : 'All records are using permanent snapshots.'}`;
+        renderAbsenteeHistorySessions();
+        if (selectedAbsenteeHistory) {
+          selectedAbsenteeHistory = loaded.find(item => item.session.id === selectedAbsenteeHistory.session.id) || null;
+        }
+        renderAbsenteeHistoryDetail();
+      } catch (err) {
+        message.textContent = 'Could not load absentee history: ' + err.message;
+        console.error('Absentee history error:', err);
+      }
+    }
+
+    async function selectAbsenteeHistorySession(sessionId) {
+      selectedAbsenteeHistory = absenteeHistorySessions.find(item => item.session.id === sessionId) || null;
+      renderAbsenteeHistoryDetail();
+    }
+
+    function downloadSelectedAbsenteeHistory() {
+      if (!selectedAbsenteeHistory) return;
+      const session = selectedAbsenteeHistory.session;
+      const rows = selectedAbsenteeHistory.absentees;
+      if (!rows.length) return alert('There are no absentees to download for this date.');
+      const csv = [
+        ['Attendance Date', 'Full Name', 'Church Serial Number', 'Sabbath School Class', 'Phone Number'],
+        ...rows.map(member => [session.session_date, member.full_name, member.member_number, member.member_class, member.phone])
+      ].map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `absentees-${session.session_date}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function printSelectedAbsenteeHistory() {
+      if (!selectedAbsenteeHistory) return;
+      const item = selectedAbsenteeHistory;
+      const dateLabel = formatDisplayDate(item.session.session_date);
+      const rows = item.absentees.map((member, index) => `
+        <tr><td>${index + 1}</td><td>${escapeHtml(member.full_name)}</td><td>${escapeHtml(member.member_number || '')}</td><td>${escapeHtml(member.member_class || '')}</td><td>${escapeHtml(member.phone || '')}</td></tr>
+      `).join('') || '<tr><td colspan="5">No absentees recorded.</td></tr>';
+      const area = document.getElementById('absenteeHistoryPrintArea');
+      area.innerHTML = `
+        <div class="report-header">
+          <img src="${CHURCH_LOGO}" alt="Church logo" class="report-logo" onerror="this.style.display='none'">
+          <div class="report-title-wrap"><h2>${escapeHtml(CHURCH_NAME)}</h2><p><strong>ABSENTEE HISTORY REPORT</strong></p><p>Attendance date: ${escapeHtml(dateLabel)}</p></div>
+        </div>
+        <p><strong>Total registered:</strong> ${item.totalCount} &nbsp; <strong>Present:</strong> ${item.presentCount} &nbsp; <strong>Absent:</strong> ${item.absentees.length}</p>
+        <table class="report-table"><thead><tr><th>#</th><th>Full Name</th><th>Church Serial</th><th>Class</th><th>Phone</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="report-footer"><div class="sign-box"><div class="sign-line">Prepared By</div></div><div class="sign-box"><div class="sign-line">Authorized Signature</div></div></div>
+      `;
+      document.body.classList.add('printing-absentee-history');
+      window.print();
+      document.body.classList.remove('printing-absentee-history');
+    }
+
+    document.getElementById('refreshAbsenteeHistoryBtn').addEventListener('click', loadAbsenteeHistory);
+    document.getElementById('absenteeHistoryTable').addEventListener('click', event => {
+      const button = event.target.closest('[data-history-session]');
+      if (button) selectAbsenteeHistorySession(button.dataset.historySession);
+    });
+    document.getElementById('downloadAbsenteeHistoryBtn').addEventListener('click', downloadSelectedAbsenteeHistory);
+    document.getElementById('printAbsenteeHistoryBtn').addEventListener('click', printSelectedAbsenteeHistory);
+
+    const RECORD_BUCKET = 'church-records';
+    const MAX_CHURCH_RECORD_SIZE = 15 * 1024 * 1024;
+
+    async function loadChurchRecords() {
+      const wrap = document.getElementById('recordsList');
+      if (!wrap || !canViewRecords()) return;
+      wrap.innerHTML = '<p class="muted">Loading church records...</p>';
+      try {
+        const { data, error } = await churchSupabase.from('church_records')
+          .select('id,title,category,record_date,description,file_name,storage_path,created_at')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        records = data || [];
+        renderRecords();
+      } catch (err) {
+        wrap.innerHTML = `<p class="muted">Could not load records: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function renderRecords() {
+      const wrap = document.getElementById('recordsList');
+      if (!wrap) return;
+      const term = (document.getElementById('recordsSearch')?.value || '').trim().toLowerCase();
+      const filtered = records.filter(r => `${r.title} ${r.category} ${r.file_name}`.toLowerCase().includes(term));
+      if (!filtered.length) { wrap.innerHTML = '<p class="muted">No matching church records found.</p>'; return; }
+      wrap.innerHTML = filtered.map(record => `
+        <div class="record-item"><div style="min-width:0;flex:1;">
+          <strong>${escapeHtml(record.title)}</strong>
+          <p class="muted">${escapeHtml(record.category)} • ${escapeHtml(record.file_name)}</p>
+          <p class="muted">${record.record_date ? escapeHtml(record.record_date) : 'Date not specified'}${record.description ? ' • ' + escapeHtml(record.description) : ''}</p>
+        </div><div class="btn-row">
+          <button class="btn btn-light" type="button" onclick="openChurchRecord('${record.id}')">View / Download</button>
+          ${canManageRecords() ? `<button class="btn btn-danger" type="button" onclick="deleteChurchRecord('${record.id}')">Delete</button>` : ''}
+        </div></div>`).join('');
+    }
+
+    window.openChurchRecord = async function(id) {
+      if (!canViewRecords()) return alert('You do not have permission to view church records.');
+      const record = records.find(r => r.id === id); if (!record) return;
+      const { data, error } = await churchSupabase.storage.from(RECORD_BUCKET).createSignedUrl(record.storage_path, 60);
+      if (error) return alert('Could not open record: ' + error.message);
+      window.open(data.signedUrl, '_blank', 'noopener');
+    };
+
+    window.deleteChurchRecord = async function(id) {
+      if (!canManageRecords()) return alert('Only the Main Administrator or Secretary can delete church records.');
+      const record = records.find(r => r.id === id);
+      if (!record || !confirm(`Delete "${record.title}" permanently?`)) return;
+      try {
+        const { error: storageError } = await churchSupabase.storage.from(RECORD_BUCKET).remove([record.storage_path]);
+        if (storageError) throw storageError;
+        const { error } = await churchSupabase.from('church_records').delete().eq('id', id);
+        if (error) throw error;
+        await loadChurchRecords();
+      } catch (err) { alert('Could not delete record: ' + err.message); }
+    };
+
+    // Church Records: minutes editor and document generation
+    let generatedRecordFile = null;
+    let generatedRecordHtml = '';
+    const minutesFields = ['minutesMeetingType','minutesVenue','minutesStartTime','minutesEndTime','minutesChairperson','minutesSecretary','minutesPresent','minutesAbsent','minutesOpening','minutesPrevious','minutesAgenda','minutesDiscussion','minutesResolutions','minutesActions','minutesNextMeeting','minutesClosing'];
+    const recordElement = id => document.getElementById(id);
+    const minutesValue = id => recordElement(id).value.trim();
+    const paragraphs = value => escapeHtml(value || 'Not recorded').replace(/\n/g, '<br>');
+    const lineItems = value => value.trim() ? '<ol>' + value.split(/\n/).filter(x=>x.trim()).map(x=>'<li>'+escapeHtml(x.trim())+'</li>').join('') + '</ol>' : '<p>Not recorded</p>';
+    function updateRecordWorkspace() {
+      const category = recordElement('recordCategory').value;
+      recordElement('minutesWorkspace').classList.toggle('hidden', category !== 'Minutes');
+      recordElement('categoryWorkspace').classList.toggle('hidden', !category || category === 'Minutes');
+      generatedRecordFile = null;
+      generatedRecordHtml = '';
+      recordElement('minutesPreviewWrap').classList.add('hidden');
+    }
+    recordElement('recordCategory').addEventListener('change', updateRecordWorkspace);
+    function buildOfficialDocument(title, content) {
+      const safeTitle = escapeHtml(title);
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${safeTitle}</title><style>
+      body{font-family:Georgia,'Times New Roman',serif;color:#111;max-width:850px;margin:36px auto;padding:24px;line-height:1.65}header{text-align:center;border-bottom:3px double #222;padding-bottom:16px;margin-bottom:22px}h1{font-size:22px}h2{font-size:17px;border-bottom:1px solid #ddd;padding-bottom:5px;margin-top:24px}li{margin:5px 0}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.signatures{display:flex;justify-content:space-between;gap:25px;margin-top:65px}.signatures div{width:45%;border-top:1px solid #333;padding-top:8px}@media print{body{margin:0;max-width:none;padding:8mm}@page{size:A4;margin:16mm}}</style></head><body><header><strong>SEVENTH-DAY ADVENTIST CHURCH</strong><div>ABELENKPE</div><h1>${safeTitle}</h1></header>${content}<\/body><\/html>`;
+    }
+    function makeGeneratedFile(html, title) {
+      generatedRecordHtml = html;
+      const safe = (title || 'Church_Record').replace(/[^a-z0-9_-]+/gi,'_').slice(0,90);
+      generatedRecordFile = new File([html], `${safe}.html`, {type:'text/html'});
+      recordElement('minutesPreview').innerHTML = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || '';
+      recordElement('minutesPreviewWrap').classList.remove('hidden');
+      recordElement('minutesMessage').textContent = 'Document generated. Review the preview, then download, print or upload.';
+    }
+    recordElement('generateMinutesBtn').addEventListener('click', () => {
+      const title = recordElement('recordTitle').value.trim() || 'Official Meeting Minutes';
+      const date = recordElement('recordDate').value;
+      if (!date || !minutesValue('minutesMeetingType') || !minutesValue('minutesChairperson') || !minutesValue('minutesSecretary')) {
+        recordElement('minutesMessage').textContent = 'Enter the record date, meeting type, chairperson and secretary first.'; return;
+      }
+      const section = (heading, body) => `<h2>${heading}</h2>${body}`;
+      const content = `<div class="meta"><div><b>Meeting:</b> ${paragraphs(minutesValue('minutesMeetingType'))}</div><div><b>Date:</b> ${escapeHtml(date)}</div><div><b>Venue:</b> ${paragraphs(minutesValue('minutesVenue'))}</div><div><b>Time:</b> ${escapeHtml(minutesValue('minutesStartTime'))} – ${escapeHtml(minutesValue('minutesEndTime'))}</div><div><b>Chairperson:</b> ${paragraphs(minutesValue('minutesChairperson'))}</div><div><b>Secretary:</b> ${paragraphs(minutesValue('minutesSecretary'))}</div></div>`+
+      section('1. Members Present',lineItems(minutesValue('minutesPresent')))+section('2. Apologies / Absentees',lineItems(minutesValue('minutesAbsent')))+section('3. Opening Prayer / Devotion','<p>'+paragraphs(minutesValue('minutesOpening'))+'</p>')+section('4. Previous Minutes and Matters Arising','<p>'+paragraphs(minutesValue('minutesPrevious'))+'</p>')+section('5. Agenda',lineItems(minutesValue('minutesAgenda')))+section('6. Proceedings and Discussions','<p>'+paragraphs(minutesValue('minutesDiscussion'))+'</p>')+section('7. Resolutions and Decisions',lineItems(minutesValue('minutesResolutions')))+section('8. Action Points','<p>'+paragraphs(minutesValue('minutesActions'))+'</p>')+section('9. Next Meeting','<p>'+paragraphs(minutesValue('minutesNextMeeting'))+'</p>')+section('10. Closing Remarks / Prayer','<p>'+paragraphs(minutesValue('minutesClosing'))+'</p>')+`<div class="signatures"><div>Prepared by: ${paragraphs(minutesValue('minutesSecretary'))}<br>Secretary / Date</div><div>Approved by: ${paragraphs(minutesValue('minutesChairperson'))}<br>Chairperson / Date</div></div>`;
+      makeGeneratedFile(buildOfficialDocument(title,content),title);
+    });
+    recordElement('generateCategoryBtn').addEventListener('click',()=>{
+      const title=recordElement('recordTitle').value.trim();
+      const body=recordElement('categoryRecordBody').value.trim();
+      if(!title || !body){recordElement('recordUploadMessage').textContent='Enter a title and record content first.';return;}
+      makeGeneratedFile(buildOfficialDocument(title,`<p><b>Category:</b> ${escapeHtml(recordElement('recordCategory').value)}</p><p><b>Date:</b> ${escapeHtml(recordElement('recordDate').value)}</p><h2>Record Details</h2><p>${paragraphs(body)}</p>`),title);
+    });
+    recordElement('saveMinutesDraftBtn').addEventListener('click',()=>{
+      const draft=Object.fromEntries([...minutesFields,'recordTitle','recordDate','recordDescription'].map(id=>[id,recordElement(id).value]));
+      try {localStorage.setItem('abelenkpe_minutes_draft',JSON.stringify(draft));recordElement('minutesMessage').textContent='Draft saved on this device.';}catch(e){recordElement('minutesMessage').textContent='Could not save draft: '+e.message;}
+    });
+    recordElement('restoreMinutesDraftBtn').addEventListener('click',()=>{
+      try {const draft=JSON.parse(localStorage.getItem('abelenkpe_minutes_draft')||'null');if(!draft)throw Error('No saved draft on this device.');Object.entries(draft).forEach(([id,value])=>{if(recordElement(id))recordElement(id).value=value;});recordElement('minutesMessage').textContent='Draft restored.';}catch(e){recordElement('minutesMessage').textContent=e.message;}
+    });
+    recordElement('downloadMinutesBtn').addEventListener('click',()=>{
+      if(!generatedRecordFile)return;
+      const url=URL.createObjectURL(generatedRecordFile);const a=document.createElement('a');a.href=url;a.download=generatedRecordFile.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    recordElement('printMinutesBtn').addEventListener('click',()=>{
+      if(!generatedRecordHtml)return;
+      const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print minutes.');return;}
+      w.document.open();w.document.write(generatedRecordHtml);w.document.close();w.focus();setTimeout(()=>w.print(),300);
+    });
+    document.getElementById('recordForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!canManageRecords()) return alert('Only the Main Administrator or Secretary can upload records.');
+      const file = document.getElementById('recordFile').files[0] || generatedRecordFile;
+      const message = document.getElementById('recordUploadMessage');
+      const button = document.getElementById('uploadRecordBtn');
+      if (!file) return;
+      if (file.size > MAX_CHURCH_RECORD_SIZE) { message.textContent = 'File is too large. Maximum size is 15 MB.'; return; }
+      if (!/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpe?g|png|html|txt)$/i.test(file.name)) { message.textContent = 'Unsupported file type.'; return; }
+      button.disabled = true; button.textContent = 'Uploading...'; message.textContent = '';
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${Date.now()}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}-${safeName}`;
+      try {
+        const { error: uploadError } = await churchSupabase.storage.from(RECORD_BUCKET).upload(path, file, {
+          cacheControl: '3600', upsert: false, contentType: file.type || 'application/octet-stream'
+        });
+       const { data: authData, error: authError } =
+    await churchSupabase.auth.getUser();
+
+if (authError) throw authError;
+
+const payload = {
+    title: document.getElementById('recordTitle').value.trim(),
+    category: document.getElementById('recordCategory').value,
+    record_date: document.getElementById('recordDate').value || null,
+    description: document.getElementById('recordDescription').value.trim() || null,
+    file_name: file.name,
+    storage_path: path,
+    mime_type: file.type || 'application/octet-stream',
+    file_size: file.size,
+    uploaded_by: authData.user?.id || null
+};
+
+const { error: insertError } = await churchSupabase
+    .from('church_records')
+    .insert(payload);
+
+if (insertError) {
+    await churchSupabase.storage.from(RECORD_BUCKET).remove([path]);
+    throw insertError;
+}
+        form.reset(); generatedRecordFile = null; generatedRecordHtml = ''; updateRecordWorkspace(); message.textContent = 'Church record uploaded and saved successfully.';
+        await loadChurchRecords();
+      } catch (err) { message.textContent = 'Upload failed: ' + err.message; }
+      finally { button.disabled = false; button.textContent = 'Upload Record'; }
+    });
+    document.getElementById('refreshRecordsBtn').addEventListener('click', loadChurchRecords);
+    document.getElementById('recordsSearch').addEventListener('input', renderRecords);
 
   let recycleBin = JSON.parse(localStorage.getItem('church_recycle_bin') || '[]');
 
@@ -2172,6 +4272,156 @@ window.deleteRecord = function(id) {
   alert('Record moved to recycle bin successfully.');
 }
 
+    function financeMemberSearchText(member) {
+      return [member.fullName, member.memberNumber, member.phone]
+        .map(value => String(value || '').toLowerCase()).join(' ');
+    }
+
+    function renderFinanceMemberSearchResults(matches) {
+      const results = document.getElementById('financeMemberResults');
+      if (!results) return;
+      if (!matches.length) {
+        results.innerHTML = '<p class="muted">No active registered member matched your search.</p>';
+        results.classList.remove('hidden');
+        return;
+      }
+      results.innerHTML = matches.slice(0, 12).map(member => `
+        <button type="button" class="btn btn-light" role="option"
+          data-finance-member-id="${escapeHtml(member.id)}"
+          style="display:block;width:100%;text-align:left;margin:5px 0;">
+          <strong>${escapeHtml(member.fullName)}</strong>
+          <span class="muted"> — ${escapeHtml(member.memberNumber || 'No serial number')} • ${escapeHtml(member.phone || 'No phone')}</span>
+        </button>`).join('');
+      results.classList.remove('hidden');
+    }
+
+    function clearFinanceMemberSelection() {
+      const search = document.getElementById('financeMemberSearch');
+      const selected = document.getElementById('financeSelectedMember');
+      const results = document.getElementById('financeMemberResults');
+      const hidden = document.getElementById('financeMemberId');
+      if (search) search.value = '';
+      if (hidden) hidden.value = '';
+      if (selected) { selected.innerHTML = ''; selected.classList.add('hidden'); }
+      if (results) { results.innerHTML = ''; results.classList.add('hidden'); }
+    }
+
+    function selectFinanceMember(memberId) {
+      const member = members.find(item => String(item.id) === String(memberId));
+      if (!member) return;
+      document.getElementById('financeMemberId').value = member.id;
+      document.getElementById('financeMemberSearch').value = member.fullName;
+      const selected = document.getElementById('financeSelectedMember');
+      selected.innerHTML = `<strong>Selected member: ${escapeHtml(member.fullName)}</strong>
+        <p class="muted">Church No.: ${escapeHtml(member.memberNumber || 'N/A')} • Phone: ${escapeHtml(member.phone || 'Not provided')}</p>
+        <button type="button" class="btn btn-light" id="changeFinanceMemberBtn">Change member</button>`;
+      selected.classList.remove('hidden');
+      document.getElementById('financeMemberResults').classList.add('hidden');
+      document.getElementById('changeFinanceMemberBtn').addEventListener('click', () => {
+        document.getElementById('financeMemberId').value = '';
+        selected.classList.add('hidden');
+        document.getElementById('financeMemberSearch').focus();
+      });
+    }
+
+    function buildFinanceWhatsAppLink(row) {
+      const number = normalizeWhatsAppNumber(row.member_phone || '');
+      if (!number) return '';
+      const message = `Hello ${row.member_name || 'Church Member'}, thank you for your payment to Abelenkpe Seventh-day Adventist Church.\n\nPayment details:\nType: ${row.income_type}\nAmount: GH₵${Number(row.amount || 0).toFixed(2)}\nDate: ${row.received_on || ''}${row.reference ? `\nReceipt/Reference: ${row.reference}` : ''}\n\nMay God richly bless you.`;
+      return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    }
+
+    document.getElementById('financeMemberSearch').addEventListener('input', event => {
+      const term = event.target.value.trim().toLowerCase();
+      document.getElementById('financeMemberId').value = '';
+      document.getElementById('financeSelectedMember').classList.add('hidden');
+      if (!term) {
+        document.getElementById('financeMemberResults').classList.add('hidden');
+        return;
+      }
+      const matches = members.filter(member => financeMemberSearchText(member).includes(term));
+      renderFinanceMemberSearchResults(matches);
+    });
+
+    document.getElementById('financeMemberResults').addEventListener('click', event => {
+      const button = event.target.closest('[data-finance-member-id]');
+      if (button) selectFinanceMember(button.dataset.financeMemberId);
+    });
+
+    async function loadFinanceTransactions() {
+      if (!canViewFinance()) return;
+      const list = document.getElementById('financeList');
+      list.innerHTML = '<p class="muted">Loading transactions...</p>';
+      try {
+        let query = churchSupabase.from('church_finance_transactions')
+          .select('id,income_type,amount,received_on,reference,notes,member_id,member_name,member_number,member_phone,created_at')
+          .order('received_on', { ascending: false }).limit(500);
+        const filter = document.getElementById('financeFilter')?.value || '';
+        if (filter) query = query.eq('income_type', filter);
+        const { data, error } = await query; if (error) throw error;
+        const rows = data || [];
+        const { data: totals, error: totalsError } = await churchSupabase.rpc('get_church_finance_summary');
+        if (totalsError) throw totalsError;
+        document.getElementById('financeTotal').textContent = `GH₵${Number(totals?.total_income || 0).toFixed(2)}`;
+        document.getElementById('financeMonthTotal').textContent = `GH₵${Number(totals?.month_income || 0).toFixed(2)}`;
+        document.getElementById('financeCount').textContent = totals?.transaction_count ?? rows.length;
+        list.innerHTML = rows.length ? rows.map(row => `
+          <div class="record-item"><div><strong>${escapeHtml(row.income_type)} — GH₵${Number(row.amount).toFixed(2)}</strong>
+          <p class="muted">${escapeHtml(row.received_on)}${row.reference ? ' • Ref: ' + escapeHtml(row.reference) : ''}</p>
+          ${row.member_name ? `<p class="muted">Paid by: ${escapeHtml(row.member_name)}${row.member_number ? ' • ' + escapeHtml(row.member_number) : ''}</p>` : '<p class="muted">Member: Not linked</p>'}
+          ${row.notes ? `<p class="muted">${escapeHtml(row.notes)}</p>` : ''}</div>
+          <div class="btn-row">
+            ${row.member_phone ? `<a class="btn btn-success" target="_blank" rel="noopener" href="${escapeHtml(buildFinanceWhatsAppLink(row))}">WhatsApp Receipt</a>` : ''}
+            ${canEditFinance() ? `<button class="btn btn-danger" type="button" onclick="deleteFinanceTransaction('${row.id}')">Delete</button>` : ''}
+          </div></div>`).join('') : '<p class="muted">No transactions found.</p>';
+      } catch (err) { list.innerHTML = `<p class="muted">Could not load finance records: ${escapeHtml(err.message)}</p>`; }
+    }
+
+    document.getElementById('financeForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!canEditFinance()) return alert('Only the Main Administrator or Treasurer can record income.');
+      const button = document.getElementById('saveFinanceBtn'), message = document.getElementById('financeMessage');
+      button.disabled = true; button.textContent = 'Saving...'; message.textContent = '';
+      try {
+        const amount = Number(document.getElementById('financeAmount').value);
+        if (!Number.isFinite(amount) || amount <= 0) throw new Error('Enter a valid amount greater than zero.');
+        const user = (await churchSupabase.auth.getUser()).data.user;
+        const selectedMemberId = document.getElementById('financeMemberId').value;
+        if (!selectedMemberId) throw new Error('Please search for and select the registered member who made this payment.');
+        const selectedMember = members.find(member => String(member.id) === String(selectedMemberId));
+        if (!selectedMember) throw new Error('The selected member could not be verified. Search and select the member again.');
+        const paymentRow = {
+          income_type: document.getElementById('financeType').value, amount,
+          received_on: document.getElementById('financeDate').value,
+          reference: document.getElementById('financeReference').value.trim() || null,
+          notes: document.getElementById('financeNotes').value.trim() || null,
+          member_id: selectedMember.id,
+          member_name: selectedMember.fullName,
+          member_number: selectedMember.memberNumber || null,
+          member_phone: selectedMember.phone || null,
+          recorded_by: user?.id
+        };
+        const { error } = await churchSupabase.from('church_finance_transactions').insert(paymentRow);
+        if (error) throw error;
+        event.currentTarget.reset();
+        document.getElementById('financeDate').value = todayLocalDate();
+        clearFinanceMemberSelection();
+        message.textContent = 'Payment saved successfully. Use the WhatsApp Receipt button in the transaction list to send the member a message.';
+        await loadFinanceTransactions();
+      } catch (err) { message.textContent = 'Could not save transaction: ' + err.message; }
+      finally { button.disabled = false; button.textContent = 'Save Transaction'; }
+    });
+
+    window.deleteFinanceTransaction = async function(id) {
+      if (!canEditFinance()) return alert('Only the Main Administrator or Treasurer can delete finance entries.');
+      if (!confirm('Delete this finance transaction? This action cannot be undone.')) return;
+      const { error } = await churchSupabase.from('church_finance_transactions').delete().eq('id', id);
+      if (error) alert('Could not delete transaction: ' + error.message); else await loadFinanceTransactions();
+    };
+    document.getElementById('refreshFinanceBtn').addEventListener('click', loadFinanceTransactions);
+    document.getElementById('financeFilter').addEventListener('change', loadFinanceTransactions);
+    document.getElementById('financeDate').value = todayLocalDate();
+
     function renderBirthdays() {
       const now = new Date();
       const month = now.getMonth() + 1;
@@ -2191,19 +4441,23 @@ window.deleteRecord = function(id) {
     }
 
     function updateStats() {
+      // `members` is the active member directory in both admin and public views.
+      // Do not use attendance-row count as membership: attendance data can
+      // contain historical or otherwise non-active member rows.
       const totalMembers = members.length;
-      const presentCount = attendance.filter(a => a.present).length;
+
+      const presentCount = isAdminLoggedIn
+        ? attendance.filter(row => row.present === true).length
+        : publicAttendanceRows.filter(row => row.present === true).length;
+
+      // Absentees are all registered active members not marked present.
+      // Do not hide the absentee count when attendance is closed or nobody
+      // has checked in yet.
+      const absentCount = Math.max(totalMembers - presentCount, 0);
 
       document.getElementById('totalMembers').textContent = totalMembers;
-
-      if (!attendanceOpen || presentCount === 0) {
-        document.getElementById('presentToday').textContent = 0;
-        document.getElementById('absentToday').textContent = 0;
-        return;
-      }
-
       document.getElementById('presentToday').textContent = presentCount;
-      document.getElementById('absentToday').textContent = Math.max(totalMembers - presentCount, 0);
+      document.getElementById('absentToday').textContent = absentCount;
     }
 
     function formatDisplayDate(dateValue) {
@@ -2623,6 +4877,297 @@ document.getElementById('uploadBulkBtn').addEventListener('click', async () => {
   }
 });
 
+
+    // ==========================================
+    // MEMBER STATUS & CHURCH TRANSFER RECORDS
+    // ==========================================
+    let memberStatusRecords = [];
+    let editingStatusId = null;
+
+    async function loadMemberStatusRecords() {
+      const tbody = document.getElementById('memberStatusTable');
+      if (!tbody) return;
+
+      if (!churchSupabase || !isAdminLoggedIn) {
+        tbody.innerHTML = '<tr><td colspan="8">Administrator access is required.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '<tr><td colspan="8">Loading records...</td></tr>';
+
+      try {
+        const { data, error } = await churchSupabase
+          .from('member_status_records')
+          .select('*')
+          .order('event_date', { ascending: false });
+
+        if (error) throw error;
+        memberStatusRecords = data || [];
+        renderMemberStatusRecords();
+      } catch (error) {
+        console.error('Member status loading error:', error);
+        tbody.innerHTML = `<tr><td colspan="8">Could not load records: ${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    function renderMemberStatusRecords() {
+      const tbody = document.getElementById('memberStatusTable');
+      if (!tbody) return;
+
+      const search = (document.getElementById('statusSearch')?.value || '').trim().toLowerCase();
+      const filter = document.getElementById('statusFilter')?.value || 'all';
+
+      const deceasedCount = memberStatusRecords.filter(r => r.record_type === 'deceased').length;
+      const transferredCount = memberStatusRecords.filter(r => r.record_type === 'transferred').length;
+
+      document.getElementById('deceasedCount').textContent = deceasedCount;
+      document.getElementById('transferredCount').textContent = transferredCount;
+
+      const filtered = memberStatusRecords.filter(record => {
+        const matchesType = filter === 'all' || record.record_type === filter;
+        const searchable = [
+          record.full_name, record.member_number, record.destination_church, record.remarks
+        ].join(' ').toLowerCase();
+        return matchesType && searchable.includes(search);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="muted">No matching member status records found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((record, index) => {
+        const deceased = record.record_type === 'deceased';
+        const label = deceased ? 'Deceased' : 'Transferred';
+        const pillClass = deceased ? 'absent' : 'open';
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td><strong>${escapeHtml(record.full_name)}</strong></td>
+            <td>${escapeHtml(record.member_number || 'N/A')}</td>
+            <td><span class="pill ${pillClass}">${label}</span></td>
+            <td>${escapeHtml(record.event_date || 'N/A')}</td>
+            <td>${escapeHtml(record.destination_church || 'N/A')}</td>
+            <td>${escapeHtml(record.remarks || 'N/A')}</td>
+            <td>
+              <div class="btn-row">
+                <button type="button" class="btn btn-light" onclick="editMemberStatus('${record.id}')">Edit</button>
+                <button type="button" class="btn btn-danger" onclick="deleteMemberStatus('${record.id}')">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('statusType').addEventListener('change', function () {
+      const transferred = this.value === 'transferred';
+      document.getElementById('destinationChurchField').classList.toggle('hidden', !transferred);
+      document.getElementById('destinationChurch').required = transferred;
+      document.getElementById('statusDateLabel').textContent =
+        transferred ? 'Date of Transfer' : 'Date of Death';
+    });
+
+    document.getElementById('memberStatusForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      if (!churchSupabase || !isAdminLoggedIn) {
+        alert('Please sign in with an approved administrator account.');
+        return;
+      }
+
+      const recordType = document.getElementById('statusType').value;
+      const destination = document.getElementById('destinationChurch').value.trim();
+
+      if (recordType === 'transferred' && !destination) {
+        alert('Please enter the receiving church.');
+        return;
+      }
+
+      if (recordType === 'deceased' &&
+          !confirm('Confirm that you want to record this member as deceased?')) {
+        return;
+      }
+
+      const payload = {
+        full_name: document.getElementById('statusFullName').value.trim(),
+        member_number: document.getElementById('statusMemberNumber').value.trim(),
+        record_type: recordType,
+        event_date: document.getElementById('statusEventDate').value,
+        destination_church: recordType === 'transferred' ? destination : null,
+        remarks: document.getElementById('statusRemarks').value.trim() || null
+      };
+
+      if (!payload.full_name || !payload.member_number || !payload.record_type || !payload.event_date) {
+        alert('Please enter the member name, church serial number, record type and date.');
+        return;
+      }
+
+      // Match by the unique church serial number before changing membership status.
+      const { data: matchedMember, error: memberLookupError } = await churchSupabase
+        .from('members')
+        .select('id, full_name, member_number, is_active')
+        .eq('member_number', payload.member_number)
+        .maybeSingle();
+
+      if (memberLookupError) throw memberLookupError;
+      if (!matchedMember) {
+        alert('No registered member was found with that church serial number. Check the number and try again.');
+        return;
+      }
+
+      // Prevent accidentally recording a different person's status.
+      if (matchedMember.full_name.trim().toLowerCase() !== payload.full_name.toLowerCase()) {
+        const confirmed = confirm(
+          `The serial number belongs to ${matchedMember.full_name}, not ${payload.full_name}. Use the registered member's name instead?`
+        );
+        if (!confirmed) return;
+        payload.full_name = matchedMember.full_name;
+        document.getElementById('statusFullName').value = matchedMember.full_name;
+      }
+
+      const button = document.getElementById('saveStatusBtn');
+      const message = document.getElementById('memberStatusMessage');
+      button.disabled = true;
+      button.textContent = editingStatusId ? 'Updating...' : 'Saving...';
+      message.textContent = '';
+
+      try {
+        let result;
+        if (editingStatusId) {
+          result = await churchSupabase
+            .from('member_status_records')
+            .update(payload)
+            .eq('id', editingStatusId);
+        } else {
+          const { data: userData, error: userError } = await churchSupabase.auth.getUser();
+          if (userError) throw userError;
+          payload.created_by = userData.user?.id || null;
+          result = await churchSupabase.from('member_status_records').insert(payload);
+        }
+
+        if (result.error) throw result.error;
+
+        // Deceased and transferred members are no longer active members.
+        // This removes them from the active membership total without deleting their records.
+        const { error: deactivateError } = await churchSupabase
+          .from('members')
+          .update({ is_active: false })
+          .eq('id', matchedMember.id);
+
+        if (deactivateError) {
+          throw new Error(
+            'The status record was saved, but the member could not be removed from the active membership total: ' +
+            deactivateError.message
+          );
+        }
+
+        message.textContent = editingStatusId
+          ? 'Record updated. Member removed from the active membership total.'
+          : 'Record saved. Member removed from the active membership total.';
+
+        resetMemberStatusForm();
+        await loadChurchData();
+        await loadMemberStatusRecords();
+      } catch (error) {
+        console.error('Member status save error:', error);
+        message.textContent = 'Could not save record: ' + error.message;
+        alert('Could not save record: ' + error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = editingStatusId ? 'Update Record' : 'Save Record';
+      }
+    });
+
+    window.editMemberStatus = function (id) {
+      const record = memberStatusRecords.find(item => String(item.id) === String(id));
+      if (!record) return;
+
+      editingStatusId = id;
+      document.getElementById('statusFullName').value = record.full_name || '';
+      document.getElementById('statusMemberNumber').value = record.member_number || '';
+      document.getElementById('statusType').value = record.record_type || '';
+      document.getElementById('statusEventDate').value = record.event_date || '';
+      document.getElementById('destinationChurch').value = record.destination_church || '';
+      document.getElementById('statusRemarks').value = record.remarks || '';
+
+      const transferred = record.record_type === 'transferred';
+      document.getElementById('destinationChurchField').classList.toggle('hidden', !transferred);
+      document.getElementById('destinationChurch').required = transferred;
+      document.getElementById('statusDateLabel').textContent =
+        transferred ? 'Date of Transfer' : 'Date of Death';
+
+      document.getElementById('saveStatusBtn').textContent = 'Update Record';
+      document.getElementById('cancelStatusEditBtn').style.display = 'inline-block';
+      document.getElementById('memberStatusForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.deleteMemberStatus = async function (id) {
+      if (!churchSupabase || !isAdminLoggedIn) {
+        alert('Administrator access is required.');
+        return;
+      }
+
+      const record = memberStatusRecords.find(item => String(item.id) === String(id));
+      if (!record) return;
+
+      if (!confirm(`Delete the status record for ${record.full_name}? This cannot be undone.`)) return;
+
+      try {
+        const { error } = await churchSupabase
+          .from('member_status_records')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+
+        // If no other status record exists for this serial number,
+        // restore the member to active membership when this status record is deleted.
+        if (record.member_number) {
+          const { data: otherStatusRows, error: otherStatusError } = await churchSupabase
+            .from('member_status_records')
+            .select('id')
+            .eq('member_number', record.member_number)
+            .limit(1);
+
+          if (otherStatusError) throw otherStatusError;
+
+          if (!otherStatusRows || otherStatusRows.length === 0) {
+            const { error: restoreError } = await churchSupabase
+              .from('members')
+              .update({ is_active: true })
+              .eq('member_number', record.member_number);
+
+            if (restoreError) throw restoreError;
+          }
+        }
+
+        await loadChurchData();
+        await loadMemberStatusRecords();
+      } catch (error) {
+        console.error('Member status delete error:', error);
+        alert('Could not delete record: ' + error.message);
+      }
+    };
+
+    function resetMemberStatusForm() {
+      document.getElementById('memberStatusForm').reset();
+      editingStatusId = null;
+      document.getElementById('destinationChurchField').classList.add('hidden');
+      document.getElementById('destinationChurch').required = false;
+      document.getElementById('statusDateLabel').textContent = 'Date of Death';
+      document.getElementById('saveStatusBtn').textContent = 'Save Record';
+      document.getElementById('cancelStatusEditBtn').style.display = 'none';
+    }
+
+    document.getElementById('cancelStatusEditBtn')
+      .addEventListener('click', resetMemberStatusForm);
+    document.getElementById('statusSearch')
+      .addEventListener('input', renderMemberStatusRecords);
+    document.getElementById('statusFilter')
+      .addEventListener('change', renderMemberStatusRecords);
+    document.getElementById('refreshStatusRecordsBtn')
+      .addEventListener('click', loadMemberStatusRecords);
+
+
     function renderAll() {
       renderRegistrationState();
       renderMembers();
@@ -2806,10 +5351,186 @@ function downloadMembersExcel() {
 }
 
 document.getElementById('downloadMembersExcelBtn').addEventListener('click', downloadMembersExcel);
+  
+    // Live profile-photo capture. The captured image is placed in the same
+    // file input used by the existing Supabase upload workflow.
+    const profileCameraModal = document.getElementById('profileCameraModal');
+    const profileCameraVideo = document.getElementById('profileCameraVideo');
+    const profileCameraCanvas = document.getElementById('profileCameraCanvas');
+    const profileCameraMessage = document.getElementById('profileCameraMessage');
+    let profileCameraStream = null;
+    let activeProfilePhotoInputId = null;
+    let profileCameraFacingMode = 'user';
+
+    async function startProfileCamera(facingMode) {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera access is unavailable. Open the website using HTTPS (or localhost) and use a supported browser.');
+      }
+
+      // Release the current camera before requesting the other one.
+      if (profileCameraStream) {
+        profileCameraStream.getTracks().forEach(track => track.stop());
+        profileCameraStream = null;
+      }
+      if (profileCameraVideo) profileCameraVideo.srcObject = null;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 1280 }
+        },
+        audio: false
+      });
+
+      profileCameraStream = stream;
+      profileCameraFacingMode = facingMode;
+      profileCameraVideo.srcObject = stream;
+      await profileCameraVideo.play();
+
+      const switchButton = document.getElementById('switchProfileCameraBtn');
+      if (switchButton) {
+        switchButton.textContent = facingMode === 'user'
+          ? 'Switch to Back Camera'
+          : 'Switch to Front Camera';
+      }
+
+      profileCameraMessage.textContent = facingMode === 'user'
+        ? 'Front camera is on. Position your face in the frame, then select Capture Photo.'
+        : 'Back camera is on. Frame the photo, then select Capture Photo.';
+    }
+
+    function stopProfileCamera() {
+      if (profileCameraStream) {
+        profileCameraStream.getTracks().forEach(track => track.stop());
+        profileCameraStream = null;
+      }
+      if (profileCameraVideo) profileCameraVideo.srcObject = null;
+    }
+
+    function closeProfileCamera() {
+      stopProfileCamera();
+      profileCameraModal.classList.add('hidden');
+      activeProfilePhotoInputId = null;
+      profileCameraFacingMode = 'user';
+    }
+
+    async function openProfileCamera(inputId) {
+      activeProfilePhotoInputId = inputId;
+      if (!profileCameraModal || !profileCameraVideo || !profileCameraMessage) {
+        alert('Camera window could not be initialized. Please refresh the page.');
+        return;
+      }
+      profileCameraMessage.textContent = 'Starting camera...';
+      profileCameraModal.classList.remove('hidden');
+
+      try {
+        await startProfileCamera('user');
+      } catch (err) {
+        console.error('Profile camera error:', err);
+        const reason = err.name === 'NotAllowedError'
+          ? 'Camera permission was blocked. Click the site icon beside the address bar, allow Camera, then reload.'
+          : err.name === 'NotFoundError'
+            ? 'No camera was found on this device.'
+            : err.name === 'NotReadableError'
+              ? 'The camera is already being used by another app. Close other camera apps and try again.'
+              : err.name === 'OverconstrainedError'
+                ? 'The requested camera mode is unavailable.'
+                : (err.message || 'Check your camera and browser permissions.');
+        profileCameraMessage.textContent = 'Could not open the camera: ' + reason;
+      }
+    }
+
+    async function switchProfileCamera() {
+      if (!profileCameraStream) {
+        profileCameraMessage.textContent = 'Start the camera before switching.';
+        return;
+      }
+
+      const previousMode = profileCameraFacingMode;
+      const nextMode = previousMode === 'user' ? 'environment' : 'user';
+      profileCameraMessage.textContent = 'Switching camera...';
+
+      try {
+        await startProfileCamera(nextMode);
+      } catch (err) {
+        console.error('Could not switch profile camera:', err);
+        const requestedCamera = nextMode === 'environment' ? 'back' : 'front';
+        profileCameraMessage.textContent =
+          `The ${requestedCamera} camera is not available on this device. Keeping the ${previousMode === 'user' ? 'front' : 'back'} camera.`;
+
+        // Try to restore the camera that was active before the switch.
+        try {
+          await startProfileCamera(previousMode);
+        } catch (restoreError) {
+          console.error('Could not restore previous profile camera:', restoreError);
+          profileCameraMessage.textContent += ' Please close and reopen the camera.';
+        }
+      }
+    }
+
+    document.getElementById('switchProfileCameraBtn')?.addEventListener('click', switchProfileCamera);
+
+    document.getElementById('captureProfilePhotoBtn')?.addEventListener('click', () => {
+      openProfileCamera('profilePhoto');
+    });
+    document.getElementById('captureSelfProfilePhotoBtn')?.addEventListener('click', () => {
+      openProfileCamera('selfProfilePhoto');
+    });
+    document.getElementById('closeProfileCameraBtn')?.addEventListener('click', closeProfileCamera);
+
+    document.getElementById('takeCameraSnapshotBtn')?.addEventListener('click', () => {
+      if (!profileCameraStream || !profileCameraVideo.videoWidth) {
+        profileCameraMessage.textContent = 'Camera is not ready yet. Please wait a moment.';
+        return;
+      }
+
+      const maxSide = 1200;
+      const scale = Math.min(1, maxSide / Math.max(profileCameraVideo.videoWidth, profileCameraVideo.videoHeight));
+      const width = Math.round(profileCameraVideo.videoWidth * scale);
+      const height = Math.round(profileCameraVideo.videoHeight * scale);
+      profileCameraCanvas.width = width;
+      profileCameraCanvas.height = height;
+      const context = profileCameraCanvas.getContext('2d');
+      context.drawImage(profileCameraVideo, 0, 0, width, height);
+
+      profileCameraCanvas.toBlob(blob => {
+        if (!blob) {
+          profileCameraMessage.textContent = 'Could not capture the photo. Please try again.';
+          return;
+        }
+
+        const photoFile = new File([blob], `member-profile-${Date.now()}.jpg`, {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        });
+
+        if (photoFile.size > 3 * 1024 * 1024) {
+          profileCameraMessage.textContent = 'Captured image is larger than 3 MB. Please capture again.';
+          return;
+        }
+
+        const input = document.getElementById(activeProfilePhotoInputId);
+        if (!input) {
+          profileCameraMessage.textContent = 'The profile photo field could not be found.';
+          return;
+        }
+
+        const transfer = new DataTransfer();
+        transfer.items.add(photoFile);
+        input.files = transfer.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        closeProfileCamera();
+      }, 'image/jpeg', 0.88);
+    });
+
+    // Stop the camera if the user leaves or hides the page.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && profileCameraStream) closeProfileCamera();
+    });
+
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>
-
-
-
