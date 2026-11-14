@@ -483,7 +483,7 @@
       switch (item.record_type) {
         case "member":
           return {
-            title: data.full_name || "Unnamed Member",
+           title: data.full_name || data.fullName || "Unnamed Member",
             subtitle: `Member Number: ${data.member_number || "N/A"}`,
             extra: `Class: ${data.member_class || "N/A"} • Phone: ${data.phone || "N/A"}`,
             badgeClass: "member",
@@ -648,10 +648,27 @@
           throw new Error("Original record ID is missing.");
         }
 
-        const restoredData = {
-          ...data,
-          id: item.original_record_id
-        };
+const restoredData = {
+  ...item.record_data,
+  id: item.original_record_id
+};
+
+// Convert frontend field names to database names.
+const fieldMapping = {
+  fullName: "full_name",
+  memberNumber: "member_number",
+  memberClass: "member_class",
+  profileImageUrl: "profile_image_url",
+  dateOfBirth: "date_of_birth",
+  phoneNumber: "phone"
+};
+
+Object.entries(fieldMapping).forEach(([frontend, database]) => {
+  if (restoredData[frontend] !== undefined) {
+    restoredData[database] = restoredData[frontend];
+    delete restoredData[frontend];
+  }
+});
 
         // Reactivate soft-deleted records.
         if (
